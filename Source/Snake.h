@@ -38,6 +38,7 @@ private:
     float velX = 0.0f;
     float velY = 0.0f;
 
+    float boostTimer = 0.0f;
     
 
     // Score / length / sections 
@@ -58,8 +59,8 @@ public:
     ~Snake();
 
     void AddNewPiece();
-    void Boost();
-    void StopBoost();
+    void RemovePiece();
+    bool BoostCheck(float frameTime, int &score);
 
     void CenterCamera(SDL_Rect& camera);
 

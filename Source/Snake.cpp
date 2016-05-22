@@ -46,17 +46,17 @@ Snake::~Snake()
     head->free();
 }
 
-void Snake::Move(float timeStep, SDL_Rect & camera)
+void Snake::Move(float frameTime, SDL_Rect & camera)
 {
     if (boosting)
     {
-        posX += velX * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * timeStep;  //Move the dot left or right
-        posY += velY * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * timeStep;  //Move the dot up or down
+        posX += velX * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;  //Move the dot left or right
+        posY += velY * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;  //Move the dot up or down
     }
     else
     {
-        posX += velX * SPEED_MULTIPLIER * timeStep;  //Move the dot left or right
-        posY += velY * SPEED_MULTIPLIER * timeStep;  //Move the dot up or down
+        posX += velX * SPEED_MULTIPLIER * frameTime;  //Move the dot left or right
+        posY += velY * SPEED_MULTIPLIER * frameTime;  //Move the dot up or down
     }
     
     //If the dot went too far to the left or right
@@ -100,19 +100,39 @@ void Snake::Move(float timeStep, SDL_Rect & camera)
         {
             if (boosting)
             {
-                Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * timeStep;
-                Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * timeStep;
+                Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;
+                Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;
             }
             else
             {
-                Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * SPEED_MULTIPLIER * timeStep;
-                Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * SPEED_MULTIPLIER * timeStep;
+                Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * SPEED_MULTIPLIER * frameTime;
+                Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * SPEED_MULTIPLIER * frameTime;
             }
             
         }
     }
+}
 
+bool Snake::BoostCheck(float frameTime, int &score)
+{
+    if (boosting && score > 0)
+    {
+        boostTimer += frameTime;
 
+        if (boostTimer >= 1.5f)
+        {
+            RemovePiece();
+            boostTimer = 0.0f;
+            score--;
+            return true;
+        }
+
+    }
+    else
+    {
+        boostTimer = 0;
+    }
+    return false;
 }
 
 void Snake::CenterCamera(SDL_Rect& camera)
@@ -181,6 +201,12 @@ void Snake::AddNewPiece()
     NumberOfPieces++;
 }
 
+void Snake::RemovePiece()
+{
+    Pieces.pop_back();
+    NumberOfPieces--;
+}
+
 void Snake::Render(SDL_Rect* viewport, SDL_Rect &camera)
 {
 
@@ -191,3 +217,4 @@ void Snake::Render(SDL_Rect* viewport, SDL_Rect &camera)
 
     head->renderMedia(posX - camera.x, posY - camera.y, renderer);
 }
+
