@@ -20,6 +20,10 @@ Snake::Snake(SDL_Renderer* rend) :
     velX = 0;
     velY = 0;
 
+    //Positions all of the new pieces correctly
+    directionVector[0] = 0.0f;
+    directionVector[1] = -0.5f;
+
     AddNewPiece();
     AddNewPiece();
     AddNewPiece();
