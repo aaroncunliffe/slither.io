@@ -9,6 +9,7 @@ Snake::Snake(SDL_Renderer* rend) :
     // load up the textures
     if (!LoadMedia())
         throw;
+
     posX = LEVEL_SIZE.w / 3;
     posY = LEVEL_SIZE.h / 3;
     //Initialize the offsets
@@ -18,6 +19,11 @@ Snake::Snake(SDL_Renderer* rend) :
     //Initialize the velocity
     velX = 0;
     velY = 0;
+
+    AddNewPiece();
+    AddNewPiece();
+    AddNewPiece();
+    AddNewPiece();
 
 }
 
@@ -38,9 +44,17 @@ Snake::~Snake()
 
 void Snake::Move(float timeStep, SDL_Rect & camera)
 {
-  
-    //Move the dot left or right
-    posX += velX * SPEED_MULTIPLIER * timeStep;
+    if (boosting)
+    {
+        posX += velX * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * timeStep;  //Move the dot left or right
+        posY += velY * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * timeStep;  //Move the dot up or down
+    }
+    else
+    {
+        posX += velX * SPEED_MULTIPLIER * timeStep;  //Move the dot left or right
+        posY += velY * SPEED_MULTIPLIER * timeStep;  //Move the dot up or down
+    }
+    
     //If the dot went too far to the left or right
     if ((posX < 0) || (posX + HEAD_WIDTH > LEVEL_SIZE.w))
     {
@@ -48,8 +62,6 @@ void Snake::Move(float timeStep, SDL_Rect & camera)
         posX -= velX;
     }
 
-    //Move the dot up or down
-    posY += velY * SPEED_MULTIPLIER * timeStep;
     //If the dot went too far up or down
     if ((posY < 0) || (posY + HEAD_HEIGHT > LEVEL_SIZE.h))
     {
@@ -79,23 +91,24 @@ void Snake::Move(float timeStep, SDL_Rect & camera)
         Pieces.at(i)->directionVector[0] = Vector2[0] / vectorLength;
         Pieces.at(i)->directionVector[1] = Vector2[1] / vectorLength;
 
+        // Moves each piece keeping a fixed distance between them
         if (vectorLength > (HEAD_HEIGHT / 2))
         {
-            Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * SPEED_MULTIPLIER * timeStep;
-            Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * SPEED_MULTIPLIER * timeStep;
+            if (boosting)
+            {
+                Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * timeStep;
+                Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * timeStep;
+            }
+            else
+            {
+                Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * SPEED_MULTIPLIER * timeStep;
+                Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * SPEED_MULTIPLIER * timeStep;
+            }
+            
         }
     }
 
 
-    // Update the position of each segment
-    for (int i = 0; i < NumberOfPieces; i++)
-    {
-        //if(vectorLength)
-        
-    }
-
-
-    
 }
 
 void Snake::CenterCamera(SDL_Rect& camera)
@@ -137,10 +150,6 @@ void Snake::MoveTo(float x, float y, SDL_Rect& camera)
     velX = directionVector[0];
     velY = directionVector[1];
 
-    
-
-    //float angle = atan2(directionVector[1], directionVector[0]);
-    //float print = angle * 180 / M_PI;
 }
 
 void Snake::AddNewPiece()
@@ -163,7 +172,6 @@ void Snake::AddNewPiece()
     }
     
 
-    std::cout << posX << " | " << posX + (-directionVector[0] * HEAD_WIDTH / 2) << std::endl;
 
     Pieces.push_back(tempPiece);
     NumberOfPieces++;
@@ -175,7 +183,6 @@ void Snake::Render(SDL_Rect* viewport, SDL_Rect &camera)
     for (int i = NumberOfPieces - 1; i >= 0; --i)
     {
         Pieces.at(i)->tex->renderMedia(Pieces.at(i)->Position[0] - camera.x, Pieces.at(i)->Position[1] - camera.y, renderer);
-
     }
 
     head->renderMedia(posX - camera.x, posY - camera.y, renderer);

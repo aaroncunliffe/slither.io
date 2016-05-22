@@ -23,6 +23,7 @@ private:
 public:
     //Members
     std::vector<food*> AllFood;
+    std::vector<int> FoodEaten;
 
     FoodMap(SDL_Renderer* rend);
     ~FoodMap();

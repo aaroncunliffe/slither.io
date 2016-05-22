@@ -28,6 +28,7 @@ private:
 
     //Maximum axis velocity of the dot
     const float SPEED_MULTIPLIER = 100.0f;
+    const float BOOST_MULTIPLIER = 2.5f;
 
     //The X and Y offsets of the dot
     float posX, posY;
@@ -36,6 +37,8 @@ private:
     //The velocity of the dot
     float velX = 0.0f;
     float velY = 0.0f;
+
+    
 
     // Score / length / sections 
     
@@ -47,6 +50,7 @@ public:
     int NumberOfPieces = 0;
     std::vector<SnakePiece*> Pieces;
 
+    bool boosting = false;
 
     //Initializes the variables
     Snake(SDL_Renderer* rend);
@@ -54,6 +58,8 @@ public:
     ~Snake();
 
     void AddNewPiece();
+    void Boost();
+    void StopBoost();
 
     void CenterCamera(SDL_Rect& camera);
 
