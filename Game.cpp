@@ -112,6 +112,10 @@ void Game::run(SDL_Event& e, float& frameTime, GameStates& state)
     //Collision detection
     Collision();
 
+    //Inputs
+    ProcessInputs(e, frameTime, SCREEN_SIZE, touchLocation, state);
+
+
     //Movement
     snake->CenterCamera(cameraMain);
     snake->Move(frameTime, cameraMain);
@@ -122,8 +126,6 @@ void Game::run(SDL_Event& e, float& frameTime, GameStates& state)
     snake->Render(viewportMain, cameraMain);
     ui->Render(touchLocation, cameraFull);
     
-    //Inputs
-    ProcessInputs(e, frameTime, SCREEN_SIZE, touchLocation, state);
     
     //Update screen
     SDL_RenderPresent(renderer);
@@ -141,6 +143,23 @@ void Game::ProcessInputs(SDL_Event& event, float& frameTime, const SDL_Rect& scr
             state = GameStates::QUIT;
         }
 
+        if (event.type == SDL_MOUSEBUTTONDOWN)
+        {
+            if (event.button.button == SDL_BUTTON_RIGHT)
+            {
+                snake->boosting = true;
+            }
+
+        }
+        else if (event.type == SDL_MOUSEBUTTONUP)
+        {
+            if (event.button.button == SDL_BUTTON_RIGHT )
+            {
+                snake->boosting = false;
+            }
+        }
+
+
         if (event.type == SDL_MOUSEMOTION)
         {
             touchLocation.x = event.button.x;
@@ -149,6 +168,7 @@ void Game::ProcessInputs(SDL_Event& event, float& frameTime, const SDL_Rect& scr
             snake->MoveTo(touchLocation.x, touchLocation.y, cameraMain);
         }
 
+       
         if (event.type == SDL_KEYDOWN)
         {
             if (event.key.keysym.sym == SDLK_ESCAPE)
@@ -183,6 +203,7 @@ void Game::Collision()
 
                 //Collision
                 food->AllFood.at(i)->eaten = true;
+                food->FoodEaten.push_back(i);
                 score++;
                 snake->AddNewPiece();
                 break;
