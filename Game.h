@@ -11,11 +11,7 @@
 #include "Snake.h"
 #include "Food.h"
 #include "Timer.h"
-//
-//#include "RakPeerInterface.h"
-//
-//#define MAX_CLIENTS 10
-//#define SERVER_PORT 60000
+
 
 class Game
 {
