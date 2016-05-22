@@ -44,7 +44,7 @@ void FoodMap::GenerateFood(float frameTime)
 {
     sinceLastFoodTime += frameTime;
 
-    if (sinceLastFoodTime >= 3.0f)
+    if (sinceLastFoodTime >= GENERATE_FOOD_TIME) // 3.0f
     {
         for (int i = 0; i < numberOfPieces; i++)
         {

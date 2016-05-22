@@ -119,7 +119,7 @@ bool Snake::BoostCheck(float frameTime, int &score)
     {
         boostTimer += frameTime;
 
-        if (boostTimer >= 1.5f)
+        if (boostTimer >= SNAKE_BOOST_TIMER)
         {
             RemovePiece();
             boostTimer = 0.0f;

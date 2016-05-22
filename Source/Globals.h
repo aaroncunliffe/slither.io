@@ -29,3 +29,8 @@ const std::string SNAKE_HEAD_PATH = "media\\dot.png";
 const std::string FOOD_FILE_PATHS[] = { "media\\reddot.png" ,"media\\bluedot.png" };
 
 const std::string TTF_FILE = { "media\\font.ttf" };
+
+const int MAX_FOOD_PIECES = SCREEN_SIZE.w / 4;
+const float GENERATE_FOOD_TIME = 3.0f; // Amount of time between new food generation
+
+const float SNAKE_BOOST_TIMER = 1.5f; // Amount of time while boosting before dropping food / score

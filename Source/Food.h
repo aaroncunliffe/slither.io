@@ -16,7 +16,7 @@ class FoodMap
 {
 
 private:
-    int numberOfPieces = LEVEL_SIZE.w / 4;
+    int numberOfPieces = MAX_FOOD_PIECES;
 
     SDL_Renderer* renderer;
 
