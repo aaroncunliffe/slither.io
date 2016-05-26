@@ -121,6 +121,13 @@ void Game::run(SDL_Event& e, float& frameTime, GameStates& state)
     snake->Move(frameTime, cameraMain);
     ui->UpdateUI(score);
 
+    if (snake->BoostCheck(frameTime, score) )
+    {
+        food->DropFood(snake->Pieces.at(snake->NumberOfPieces - 1)->Position[0], snake->Pieces.at(snake->NumberOfPieces - 1)->Position[1]);
+    }
+     
+    food->GenerateFood(frameTime);
+
     //Rendering
     food->Render(background, cameraMain);
     snake->Render(viewportMain, cameraMain);
@@ -200,10 +207,8 @@ void Game::Collision()
 
             if (distance <= snake->getRadius() + food->AllFood.at(i)->radius)
             {
-
                 //Collision
-                food->AllFood.at(i)->eaten = true;
-                food->FoodEaten.push_back(i);
+                food->HideFood(i);
                 score++;
                 snake->AddNewPiece();
                 break;

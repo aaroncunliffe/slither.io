@@ -16,24 +16,33 @@ class FoodMap
 {
 
 private:
-    int NUM_PIECES = LEVEL_SIZE.w / 4;
+    int numberOfPieces = MAX_FOOD_PIECES;
 
     SDL_Renderer* renderer;
+
+    float sinceLastFoodTime = 0.0f;
+    
+    int foodEaten = 0;
 
 public:
     //Members
     std::vector<food*> AllFood;
-    std::vector<int> FoodEaten;
 
     FoodMap(SDL_Renderer* rend);
     ~FoodMap();
 
     void Render(Texture* texture, SDL_Rect& camera);
-    
+
+    void DropFood(float x, float y);
+
+    void HideFood(int index);
+    void GenerateFood(float frameTime);
+
     float Random(int rangeMin, int rangeMax);
 
+
     //Getter
-    int GetNumOfPieces() { return NUM_PIECES; }
+    int GetNumOfPieces() { return numberOfPieces; }
 
     std::vector<food*>GetAllFood() { return AllFood; }
 
