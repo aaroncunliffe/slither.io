@@ -1,12 +1,23 @@
 #include <enet/enet.h>
 #include <stdio.h>
 
+#include <string>  //Debugging
+#include <cstring> //Debugging
+
+#include <iostream>
+#include <sstream>
+
+
 int main(int argc, char **argv)
 {
     ENetAddress address;
     ENetHost *server;
     ENetEvent event;
     int eventStatus;
+
+    std::stringstream ss;
+    char message[1024]; // Debugging
+    ENetPacket* packet;
 
     // a. Initialize enet
     if (enet_initialize() != 0) {
@@ -17,6 +28,7 @@ int main(int argc, char **argv)
     atexit(enet_deinitialize);
 
     // b. Create a host using enet_host_create
+    address.host = ENET_HOST_ANY; // Localhost
     address.port = 1234;
 
     server = enet_host_create(&address, 32, 2, 0, 0);
@@ -36,14 +48,31 @@ int main(int argc, char **argv)
         if (eventStatus > 0) {
             switch (event.type) {
             case ENET_EVENT_TYPE_CONNECT:
-                printf("(Server) We got a new connection from %x\n"),
-                    event.peer->address.host;
+                printf("(Server) We got a new connection from %x\n", event.peer->address.host);
+                event.peer->data = (char*)(event.peer->incomingPeerID);
                 break;
 
             case ENET_EVENT_TYPE_RECEIVE:
-                printf("(Server) Message from client %x : %s\n", event.peer->address.host, event.packet->data);
-                // Lets broadcast this message to all
-                enet_host_broadcast(server, 0, event.packet);
+               //printf("(Server) Message from client %x : %s\n", event.peer->connectID, event.packet->data);
+
+                //std::strcpy(message, (char*)event.packet->); // copy ID
+                //std::strcpy(message, "|");
+                std::strcpy(message, (char*)event.packet->data);
+
+                //(char*)event.packet->data
+                printf("(Server) Message from client %x : %s\n", event.peer->connectID, message);
+
+                for (size_t i = 0; i < server->peerCount ; i++) {
+                    if (&server->peers[i] != event.peer) {
+                       // message = (char*)event.packet->data;
+                       
+                        packet = enet_packet_create(message, strlen(message) + 1, 0);
+                        enet_peer_send(&server->peers[i], 0, packet);
+                        enet_host_flush(server);
+                        
+                    }
+                }
+                enet_packet_destroy(packet);
                 break;
 
             case ENET_EVENT_TYPE_DISCONNECT:
@@ -57,3 +86,24 @@ int main(int argc, char **argv)
     }
 
 }
+
+//void CreatePacket()
+//{
+//    /* Create a reliable packet of size 7 containing "packet\0" */
+//    ENetPacket* packet = enet_packet_create("packet", strlen("packet") + 1, ENET_PACKET_FLAG_RELIABLE);
+//
+//    /* Extend the packet so and append the string "foo", so it now */
+//    /* contains "packetfoo\0"                                      */
+//    
+//    enet_packet_resize(packet, strlen("packetfoo") + 1);
+//    strcpy(&packet->data[strlen("packet")], "foo");
+//    /* Send the packet to the peer over channel id 0. */
+//    /* One could also broadcast the packet by         */
+//    /* enet_host_broadcast (host, 0, packet);         */
+//    enet_peer_send(peer, 0, packet);
+//    ...
+//        ...
+//        ...
+//        /* One could just use enet_host_service() instead. */
+//        enet_host_flush(host);
+//}
