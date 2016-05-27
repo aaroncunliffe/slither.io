@@ -5,15 +5,15 @@
 // MOVEMENT CODE NEEDS TIDYING UP
 
 
-Snake::Snake(SDL_Renderer* rend) :
+Snake::Snake(SDL_Renderer* rend, float x, float y) :
     renderer(rend)
 {
     // load up the textures
     if (!LoadMedia())
         throw;
 
-    posX = LEVEL_SIZE.w / 3;
-    posY = LEVEL_SIZE.h / 3;
+    posX = x;
+    posY = y;
     //Initialize the offsets
     //posX = 0;
     //posY = 0;
@@ -132,11 +132,11 @@ bool Snake::BoostCheck(float frameTime, int &score)
     if (boosting && score > 0)
     {
         boostTimer += frameTime;
-
-        if (boostTimer >= SNAKE_BOOST_TIMER)
+        if (boostTimer > SNAKE_BOOST_TIMER)
         {
-            RemovePiece();
+
             boostTimer = 0.0f;
+            RemovePiece();
             score--;
             return true;
         }
@@ -144,7 +144,8 @@ bool Snake::BoostCheck(float frameTime, int &score)
     }
     else
     {
-        boostTimer = 0;
+        boostTimer = 0.0f;
+        boosting = false;
     }
     return false;
 }
@@ -209,8 +210,6 @@ void Snake::AddNewPiece()
         tempPiece->Position[1] = Pieces.at(NumberOfPieces -1)->Position[1] + (-Pieces.at(NumberOfPieces - 1)->directionVector[1] * HEAD_WIDTH / 2);
     }
     
-
-
     Pieces.push_back(tempPiece);
     NumberOfPieces++;
 }

@@ -48,38 +48,62 @@ int main(int argc, char **argv)
         if (eventStatus > 0) {
             switch (event.type) {
             case ENET_EVENT_TYPE_CONNECT:
-                printf("(Server) We got a new connection from %x\n", event.peer->address.host);
-                event.peer->data = (char*)(event.peer->incomingPeerID);
+            {
+                printf("(Server) We got a new connection from %x\n", event.peer->connectID);
+                std::string ID = std::to_string(event.peer->connectID);
+                std::strcpy(message, ID.c_str());
+                printf("ID SENT %i\n", ID);
+
+                for (size_t i = 0; i < server->peerCount; i++) {
+                    if (&server->peers[i] != event.peer) {
+                        // message = (char*)event.packet->data;
+
+                        packet = enet_packet_create(message, strlen(message) + 1, 0);
+                        enet_peer_send(&server->peers[i], 0, packet);
+                        enet_host_flush(server);
+
+                    }
+                }
+                enet_packet_destroy(packet);
+
                 break;
+            }
+               
 
             case ENET_EVENT_TYPE_RECEIVE:
-               //printf("(Server) Message from client %x : %s\n", event.peer->connectID, event.packet->data);
+            {
+                //printf("(Server) Message from client %x : %s\n", event.peer->connectID, event.packet->data);
 
                 //std::strcpy(message, (char*)event.packet->); // copy ID
                 //std::strcpy(message, "|");
                 std::strcpy(message, (char*)event.packet->data);
 
                 //(char*)event.packet->data
-                printf("(Server) Message from client %x : %s\n", event.peer->connectID, message);
+                //("(Server) Message from client %x : %s\n", event.peer->connectID, message);
 
-                for (size_t i = 0; i < server->peerCount ; i++) {
+                for (size_t i = 0; i < server->peerCount; i++) {
                     if (&server->peers[i] != event.peer) {
-                       // message = (char*)event.packet->data;
-                       
+                        // message = (char*)event.packet->data;
+
                         packet = enet_packet_create(message, strlen(message) + 1, 0);
                         enet_peer_send(&server->peers[i], 0, packet);
                         enet_host_flush(server);
-                        
+
                     }
                 }
                 enet_packet_destroy(packet);
                 break;
+            }
+               
 
             case ENET_EVENT_TYPE_DISCONNECT:
+            {
                 printf("%s disconnected.\n", event.peer->data);
                 // Reset client's information
                 event.peer->data = NULL;
                 break;
+            }
+                
 
             }
         }

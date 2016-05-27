@@ -32,14 +32,10 @@ SlitherClient::SlitherClient()
         exit(EXIT_FAILURE);
     }
 
-   
-
    ID = peer->connectID;
-
    printf("%i", ID);
 
     eventStatus = 1;
-
 
 }
 
@@ -52,30 +48,40 @@ void SlitherClient::Poll()
     if (eventStatus > 0) {
         switch (event.type) {
         case ENET_EVENT_TYPE_CONNECT:
-            printf("(Client) We got a new connection from %x\n", event.peer->address.host);
-
-            
+        {
+            printf("Connected to the server: ID - %x\n", event.peer->connectID);
+            //event.peer->data = (char*)(event.peer->connectID);
+            break;
 
             //printf("%s\n", event.peer->data);
-            break;
+            
+        }
+        
 
         case ENET_EVENT_TYPE_RECEIVE:
+        {
+            //printf("%s\n", event.packet->data);
+            
+            receivedPacket = (char*)event.packet->data;
+            SplitAndStore();
 
-            printf("A packet of length %u containing %s was received from %s on channel %u.\n",
-                event.packet->dataLength,
-                event.packet->data,
-                event.peer->data,
-                event.channelID);
+            //printf("%s\n", receivedPacket);
+
             /* Clean up the packet now that we're done using it. */
-
             enet_packet_destroy(event.packet);
+
             break;
+        }
+
 
         case ENET_EVENT_TYPE_DISCONNECT:
-            printf("(Client) %x disconnected.\n", event.peer->connectID);
-            // Reset client's information
-            event.peer->data = NULL;
-            break;
+            {
+                printf("(Client) %x disconnected.\n", event.peer->connectID);
+                // Reset client's information
+                event.peer->data = NULL;
+                break;
+            }
+            
         }
     }
 
@@ -88,12 +94,12 @@ void SlitherClient::Poll()
     }*/
 }
 
-void SlitherClient::SendPosition(int x, int y)
+void SlitherClient::SendPosition(int x, int y, SDL_Rect &camera)
 {
     /* Create a reliable packet of size 7 containing "packet\0" */
     std::string packetString = std::to_string(peer->connectID);
 
-    packetString = packetString + "|" + "X:" + std::to_string(x) + "Y:" + std::to_string(y) + "$";
+    packetString = packetString + ":" + std::to_string(x) + ":" + std::to_string(y);
 
 
     packet = enet_packet_create(packetString.c_str(), strlen(packetString.c_str()) + 1, ENET_PACKET_FLAG_RELIABLE);
@@ -108,4 +114,74 @@ void SlitherClient::SendPosition(int x, int y)
     /* One could also broadcast the packet by         */
     /* enet_host_broadcast (host, 0, packet);         */
     enet_peer_send(peer, 0, packet);
+}
+
+void SlitherClient::SplitAndStore()
+{
+
+    if (receivedPacket == NULL)
+        return;
+
+    char* IDchar = "";
+    char* Xchar = "";
+    char* Ychar = "";
+
+    
+
+    int count = 0;
+    //for (int i = 0; receivedPacket[i] != 0; i++)
+    //{
+
+    //    if (receivedPacket[i] == ':')
+    //    {
+    //        count++;
+    //        
+    //    }
+    //    else
+    //    {
+    //        switch (count)
+    //        {
+    //        case 0:
+    //            IDchar += receivedPacket[i];
+
+    //            break;
+    //        case 1:
+    //            Xchar += receivedPacket[i];
+    //            break;
+    //        case 2:
+    //            Ychar += receivedPacket[i];
+    //            break;
+    //        }
+    //    }
+
+    //}
+
+    char* token = strtok(receivedPacket, ":");
+
+    while (token != NULL) 
+    {
+        switch (count)
+        {
+        case 0:
+            IDchar = token;
+
+            break;
+        case 1:
+            Xchar = token;
+            break;
+        case 2:
+            Ychar = token;
+            break;
+
+        }
+
+        token = strtok(NULL, ":");
+        count++;
+    }
+    ID = (int)(IDchar);
+    X = atoi(Xchar);
+    Y = atoi(Ychar);
+
+    //printf("%s\n", IDchar);
+
 }

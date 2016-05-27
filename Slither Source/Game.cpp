@@ -30,9 +30,17 @@ Game::Game()
 bool Game::CreateGameObjects()
 {
     ui = new UI(renderer, viewportMain);
-    snake = new Snake(renderer);
+    snake = new Snake(renderer, LEVEL_SIZE.w /3, LEVEL_SIZE.h / 3);
     food = new FoodMap(renderer);
     client = new SlitherClient();
+
+    snake->setInPlay(true);
+
+    Snake* tempSnake = new Snake(renderer, LEVEL_SIZE.w / 3 + 10.0f , LEVEL_SIZE.h / 3);
+
+    tempSnake->setInPlay(true);
+    
+    snakes.push_back(tempSnake);
 
     return true;
 }
@@ -41,8 +49,11 @@ Game::~Game()
 {
     background->free();
 
+    delete ui;
     delete snake;
-    delete food;
+    /*delete food;
+    delete client;*/
+
 }
 
 bool Game::init(const SDL_Rect& screenSize)
@@ -107,33 +118,49 @@ void Game::run(SDL_Event& e, float& frameTime, GameStates& state)
     //Clear screen
     SDL_RenderClear(renderer);
 
-    background->renderMedia(0, 0, renderer, &cameraMain);    
+   
 
     //Collision detection
     Collision();
 
+    if (snake->BoostCheck(frameTime, score))
+    {
+        if (score > 0)
+        {
+            food->DropFood(snake->Pieces.at(snake->NumberOfPieces - 1)->Position[0], snake->Pieces.at(snake->NumberOfPieces - 1)->Position[1]);
+        }
+    }
+
     //Inputs
-    ProcessInputs(e, frameTime, SCREEN_SIZE, touchLocation, state);
     client->Poll();
+    ProcessInputs(e, frameTime, SCREEN_SIZE, touchLocation, state);
+    ProcessPackets();
 
     //Movement
     snake->CenterCamera(cameraMain);
     snake->Move(frameTime, cameraMain);
-    ui->UpdateUI(score);
-
-    if (snake->BoostCheck(frameTime, score) )
+    for (int i = 0; i < snakes.size(); i++)
     {
-        food->DropFood(snake->Pieces.at(snake->NumberOfPieces - 1)->Position[0], snake->Pieces.at(snake->NumberOfPieces - 1)->Position[1]);
+        snakes.at(i)->Move(frameTime, cameraMain);
     }
+
+    client->SendPosition(snake->getPosX(), snake->getPosY(), cameraMain); // Send packets
+
+    ui->UpdateUI(score);
      
     food->GenerateFood(frameTime);
 
     //Rendering
+    background->renderMedia(0, 0, renderer, &cameraMain);
     food->Render(background, cameraMain);
+    for (int i = 0; i < snakes.size(); i++)
+    {
+        snakes.at(i)->Render(viewportMain, cameraMain);
+    }
     snake->Render(viewportMain, cameraMain);
     ui->Render(touchLocation, cameraFull);
     
-    
+   
     //Update screen
     SDL_RenderPresent(renderer);
 
@@ -154,7 +181,10 @@ void Game::ProcessInputs(SDL_Event& event, float& frameTime, const SDL_Rect& scr
         {
             if (event.button.button == SDL_BUTTON_RIGHT)
             {
-                snake->boosting = true;
+                /*if (score > 0)
+                {*/
+                    snake->boosting = true;
+                //}
             }
 
         }
@@ -172,7 +202,8 @@ void Game::ProcessInputs(SDL_Event& event, float& frameTime, const SDL_Rect& scr
             touchLocation.x = event.button.x;
             touchLocation.y = event.button.y;
 
-            client->SendPosition(snake->getPosX(), snake->getPosX());
+            
+            //snakes.at(0)->MoveTo(touchLocation.x, touchLocation.y, cameraMain);
             snake->MoveTo(touchLocation.x, touchLocation.y, cameraMain);
         }
 
@@ -218,6 +249,20 @@ void Game::Collision()
             
         }
     }
+}
+
+void Game::ProcessPackets()
+{
+    int x = client->X;
+    int y = client->Y;
+
+    if(x > 0 && y > 0)
+    {
+        snakes.at(0)->setPosX(x);
+        snakes.at(0)->setPosY(y);
+    }
+
+
 }
 
 void Game::close()

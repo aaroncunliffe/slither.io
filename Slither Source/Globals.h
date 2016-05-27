@@ -3,6 +3,7 @@
 #include <string>
 #include <math.h>
 #include <vector>
+#include <boost>
 
 #define _USE_MATH_DEFINES
 

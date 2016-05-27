@@ -51,10 +51,12 @@ public:
     int NumberOfPieces = 0;
     std::vector<SnakePiece*> Pieces;
 
+    unsigned int ID;
     bool boosting = false;
+    bool snakeInPlay = false;
 
     //Initializes the variables
-    Snake(SDL_Renderer* rend);
+    Snake(SDL_Renderer* rend, float x, float y);
 
     ~Snake();
 
@@ -67,10 +69,15 @@ public:
     //Shows the dot on the screen relative to the camera
     void Render(SDL_Rect* viewport, SDL_Rect &camera);
 
-    //Position accessors
+    //Getters
     int getPosX() { return posX; };
     int getPosY() { return posY; };
     int getRadius() { return radius; }
+
+    //Setters
+    void setPosX(float x) { posX = x; }
+    void setPosY(float y) { posY = y; }
+    void setInPlay(bool inPlay) { snakeInPlay = inPlay; }
 
     //Movement
     void MoveTo(float x, float y, SDL_Rect& camera);

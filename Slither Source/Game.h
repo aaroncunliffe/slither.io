@@ -41,6 +41,8 @@ private:
     Snake* snake;
     FoodMap* food;
     SlitherClient* client;
+
+    std::vector<Snake*> snakes;
     
 
 public:
@@ -56,6 +58,7 @@ public:
     void run(SDL_Event& e, float& frameTime, GameStates& state);
 
     void ProcessInputs(SDL_Event& event, float& frameTime, const SDL_Rect& screenSize, SDL_Point& touchLocation, GameStates& state);
+    void ProcessPackets();
 
     void Collision();
 
