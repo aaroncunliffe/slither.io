@@ -9,7 +9,6 @@ Game::Game()
     if (!CreateGameObjects())
         throw;
 
-    
 
     // set default touch location to the centre of the screen
     touchLocation.x = SCREEN_SIZE.w / 2;
@@ -33,7 +32,8 @@ bool Game::CreateGameObjects()
     ui = new UI(renderer, viewportMain);
     snake = new Snake(renderer);
     food = new FoodMap(renderer);
-    
+    client = new SlitherClient();
+
     return true;
 }
 
@@ -114,7 +114,7 @@ void Game::run(SDL_Event& e, float& frameTime, GameStates& state)
 
     //Inputs
     ProcessInputs(e, frameTime, SCREEN_SIZE, touchLocation, state);
-
+    client->Poll();
 
     //Movement
     snake->CenterCamera(cameraMain);
@@ -172,6 +172,7 @@ void Game::ProcessInputs(SDL_Event& event, float& frameTime, const SDL_Rect& scr
             touchLocation.x = event.button.x;
             touchLocation.y = event.button.y;
 
+            client->SendPosition(snake->getPosX(), snake->getPosX());
             snake->MoveTo(touchLocation.x, touchLocation.y, cameraMain);
         }
 

@@ -5,7 +5,7 @@
 #include <SDL_ttf.h>
 
 #include <iostream>>
-
+#include "Network.h"
 #include "Globals.h"
 #include "UI.h"
 #include "Snake.h"
@@ -40,7 +40,7 @@ private:
     UI* ui;
     Snake* snake;
     FoodMap* food;
-
+    SlitherClient* client;
     
 
 public:
