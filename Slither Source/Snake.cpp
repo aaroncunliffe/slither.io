@@ -91,37 +91,39 @@ void Snake::Move(float frameTime, SDL_Rect & camera)
     for (int i = 0; i < NumberOfPieces; i++)
     {
         //Calculate movement to previous segments position
-        float Vector2[2];
-        if (i == 0)
+        float Vector[2];
+        if (i == 0) // if first piece, follow head
         {
-            Vector2[0] = (posX - camera.x) - (Pieces.at(i)->Position[0] - camera.x);
-            Vector2[1] = (posY - camera.y) - (Pieces.at(i)->Position[1] - camera.y);
+            Vector[0] = (posX - camera.x) - (Pieces.at(i)->Position[0] - camera.x);
+            Vector[1] = (posY - camera.y) - (Pieces.at(i)->Position[1] - camera.y);
         }
         else if (i > 0)
         {
-            Vector2[0] = (Pieces.at(i - 1)->Position[0] - camera.x) - (Pieces.at(i)->Position[0] - camera.x);
-            Vector2[1] = (Pieces.at(i - 1)->Position[1] - camera.y) - (Pieces.at(i)->Position[1] - camera.y);
+            Vector[0] = (Pieces.at(i - 1)->Position[0] - camera.x) - (Pieces.at(i)->Position[0] - camera.x);
+            Vector[1] = (Pieces.at(i - 1)->Position[1] - camera.y) - (Pieces.at(i)->Position[1] - camera.y);
 
         }
 
-        float vectorLength = sqrt(Vector2[0] * Vector2[0] + Vector2[1] * Vector2[1]);
+        float vectorLength = sqrt(Vector[0] * Vector[0] + Vector[1] * Vector[1]);
 
-        Pieces.at(i)->directionVector[0] = Vector2[0] / vectorLength;
-        Pieces.at(i)->directionVector[1] = Vector2[1] / vectorLength;
+        Pieces.at(i)->directionVector[0] = Vector[0] / vectorLength;
+        Pieces.at(i)->directionVector[1] = Vector[1] / vectorLength;
 
         // Moves each piece keeping a fixed distance between them
         if (vectorLength > (HEAD_HEIGHT / 2))
         {
-            if (boosting)
+            if (i == 0) // if first piece, follow head
             {
-                Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;
-                Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;
+                Pieces.at(i)->Position[0] = posX - ((HEAD_HEIGHT / 2) * Pieces.at(i)->directionVector[0]);
+                Pieces.at(i)->Position[1] = posY - ((HEAD_HEIGHT / 2) * Pieces.at(i)->directionVector[1]);
             }
-            else
+            else if (i > 0)
             {
-                Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * SPEED_MULTIPLIER * frameTime;
-                Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * SPEED_MULTIPLIER * frameTime;
+                Pieces.at(i)->Position[0] = Pieces.at(i - 1)->Position[0] - ((HEAD_HEIGHT / 2) * Pieces.at(i)->directionVector[0]);
+                Pieces.at(i)->Position[1] = Pieces.at(i - 1)->Position[1] - ((HEAD_HEIGHT / 2) * Pieces.at(i)->directionVector[1]);
+
             }
+           
             
         }
     }
@@ -231,3 +233,15 @@ void Snake::Render(SDL_Rect* viewport, SDL_Rect &camera)
     head->renderMedia(posX - camera.x, posY - camera.y, renderer);
 }
 
+
+// Old code for fixed distance between segments
+/*if (boosting)
+{
+Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;
+Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;
+}
+else
+{
+Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * SPEED_MULTIPLIER * frameTime;
+Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * SPEED_MULTIPLIER * frameTime;
+}*/

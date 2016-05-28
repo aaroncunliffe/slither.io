@@ -253,6 +253,9 @@ void Game::Collision()
 
 void Game::ProcessPackets()
 {
+    float oldx = snakes.at(0)->getPosX();;
+    float oldy = snakes.at(0)->getPosY();;
+    
     int x = client->X;
     int y = client->Y;
 
@@ -260,6 +263,7 @@ void Game::ProcessPackets()
     {
         snakes.at(0)->setPosX(x);
         snakes.at(0)->setPosY(y);
+        //snakes.at(0)->MoveTo(x, y, cameraMain);
     }
 
 

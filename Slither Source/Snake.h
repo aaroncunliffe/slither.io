@@ -78,6 +78,7 @@ public:
     void setPosX(float x) { posX = x; }
     void setPosY(float y) { posY = y; }
     void setInPlay(bool inPlay) { snakeInPlay = inPlay; }
+    void setDirectionVector(int x, int y) { directionVector[0] = x; directionVector[1] = y; }
 
     //Movement
     void MoveTo(float x, float y, SDL_Rect& camera);
