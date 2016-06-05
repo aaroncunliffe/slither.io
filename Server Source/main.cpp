@@ -15,9 +15,10 @@ int main(int argc, char **argv)
     ENetEvent event;
     int eventStatus;
 
-    std::stringstream ss;
     char message[1024]; // Debugging
-    ENetPacket* packet;
+    ENetPacket* packet = NULL;
+
+    int peers = 1;
 
     // a. Initialize enet
     if (enet_initialize() != 0) {
@@ -42,72 +43,89 @@ int main(int argc, char **argv)
     eventStatus = 1;
 
     while (1) {
-        eventStatus = enet_host_service(server, &event, 50000);
+        eventStatus = enet_host_service(server, &event, 00);
 
         // If we had some event that interested us
         if (eventStatus > 0) {
+
             switch (event.type) {
-            case ENET_EVENT_TYPE_CONNECT:
-            {
-                printf("(Server) We got a new connection from %x\n", event.peer->connectID);
-                std::string ID = std::to_string(event.peer->connectID);
-                std::strcpy(message, ID.c_str());
-                printf("ID SENT %i\n", ID);
+                case ENET_EVENT_TYPE_CONNECT:
+                {
+                    event.peer->data = (char*)peers;
 
-                for (size_t i = 0; i < server->peerCount; i++) {
-                    if (&server->peers[i] != event.peer) {
-                        // message = (char*)event.packet->data;
+                    printf("(Server) We got a new connection from %x\n", event.peer->data);
+                    peers++;
 
-                        packet = enet_packet_create(message, strlen(message) + 1, 0);
-                        enet_peer_send(&server->peers[i], 0, packet);
-                        enet_host_flush(server);
+                    enet_packet_destroy(event.packet);
 
-                    }
+                    break;
                 }
-                enet_packet_destroy(packet);
 
-                break;
-            }
-               
 
-            case ENET_EVENT_TYPE_RECEIVE:
-            {
-                //printf("(Server) Message from client %x : %s\n", event.peer->connectID, event.packet->data);
+                case ENET_EVENT_TYPE_RECEIVE:
+                {
+                    //printf("(Server) Message from client %x : %s\n", event.peer->connectID, event.packet->data);
 
-                //std::strcpy(message, (char*)event.packet->); // copy ID
-                //std::strcpy(message, "|");
-                std::strcpy(message, (char*)event.packet->data);
+                    //std::strcpy(message, (char*)event.packet->); // copy ID
+                    //std::strcpy(message, "|");
+                    //std::strcpy(message, (char*)event.peer->data);  //
+                    //std::strcat(message, (char*)event.packet->data);
 
-                //(char*)event.packet->data
-                //("(Server) Message from client %x : %s\n", event.peer->connectID, message);
+                    std::string packetString = "";
 
-                for (size_t i = 0; i < server->peerCount; i++) {
-                    if (&server->peers[i] != event.peer) {
-                        // message = (char*)event.packet->data;
+                    packetString = packetString + std::to_string((int)event.peer->data) + ":" + (char*)event.packet->data;
 
-                        packet = enet_packet_create(message, strlen(message) + 1, 0);
-                        enet_peer_send(&server->peers[i], 0, packet);
-                        enet_host_flush(server);
+                    //printf("%i\n", (int)event.peer->data);
+                    enet_packet_destroy(event.packet);
 
+                    packet = enet_packet_create(packetString.c_str(), strlen(packetString.c_str()) + 1, 0);
+
+
+                    //std::strcpy(message, charArray);
+
+                    //(char*)event.packet->data
+                    
+
+                    for (size_t i = 0; i < peers; i++) {
+
+                        if (&server->peers[i] != event.peer) {
+
+
+                            // message = (char*)event.packet->data;
+
+                            enet_peer_send(&server->peers[i], 0, packet);
+                            enet_host_flush(server);
+
+                        }
                     }
-                }
-                enet_packet_destroy(packet);
-                break;
-            }
-               
 
-            case ENET_EVENT_TYPE_DISCONNECT:
-            {
-                printf("%s disconnected.\n", event.peer->data);
-                // Reset client's information
-                event.peer->data = NULL;
-                break;
-            }
+
+                    //enet_host_broadcast(server, 0, packet);
+
+
+
+                    break;
+                }
+
+
+                case ENET_EVENT_TYPE_DISCONNECT:
+                {
+                    printf("%s disconnected.\n", event.peer->data);
+                    // Reset client's information
+                    event.peer->data = NULL;
+                    enet_packet_destroy(event.packet);
+
+                    break;
+                    
+                }
+
+
                 
-
             }
         }
     }
+
+    enet_host_destroy(server);
 
 }
 

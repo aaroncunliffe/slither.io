@@ -14,9 +14,6 @@ Snake::Snake(SDL_Renderer* rend, float x, float y) :
 
     posX = x;
     posY = y;
-    //Initialize the offsets
-    //posX = 0;
-    //posY = 0;
 
     //Initialize the velocity
     velX = 0;
@@ -30,6 +27,8 @@ Snake::Snake(SDL_Renderer* rend, float x, float y) :
     AddNewPiece();
     AddNewPiece();
     AddNewPiece();
+
+    atDestination = true;
 
 }
 
@@ -123,10 +122,18 @@ void Snake::Move(float frameTime, SDL_Rect & camera)
                 Pieces.at(i)->Position[1] = Pieces.at(i - 1)->Position[1] - ((HEAD_HEIGHT / 2) * Pieces.at(i)->directionVector[1]);
 
             }
-           
+
+            // Update grid location
+            Pieces.at(i)->gridReference[0] = Pieces.at(i)->Position[0] / GRIDSIZE;
+            Pieces.at(i)->gridReference[1] = Pieces.at(i)->Position[1] / GRIDSIZE;
+          
             
         }
     }
+
+    // Update Grid location;
+    headGridReference[0] = posX / GRIDSIZE;
+    headGridReference[1] = posY / GRIDSIZE;
 }
 
 bool Snake::BoostCheck(float frameTime, int &score)

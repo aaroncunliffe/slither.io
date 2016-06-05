@@ -6,15 +6,18 @@ FoodMap::FoodMap(SDL_Renderer* rend) : renderer(rend)
     {
         food* tempFood = new food;
         tempFood->tex = new Texture;
-        tempFood->tex->loadFromFile(FOOD_FILE_PATHS[i % 2], renderer);
-        tempFood->fileName = FOOD_FILE_PATHS[i % 2];
-        tempFood->pos[0] = Random(0, LEVEL_SIZE.w);
-        tempFood->pos[1] = Random(0, LEVEL_SIZE.h);
+        tempFood->tex->loadFromFile(FOOD_FILE_PATHS[0], renderer);
+        tempFood->fileName = FOOD_FILE_PATHS[0];
+        tempFood->pos[0] = Random(0 + BORDER, LEVEL_SIZE.w - BORDER);
+        tempFood->pos[1] = Random(0 + BORDER, LEVEL_SIZE.h - BORDER);
         tempFood->eaten = false;
         tempFood->radius = 10.0f;
-
+        tempFood->gridReference[0] = tempFood->pos[0] / GRIDSIZE;
+        tempFood->gridReference[1] = tempFood->pos[1] / GRIDSIZE;
         AllFood.push_back(tempFood);
     }
+
+    srand(time(NULL));
 }
 
 FoodMap::~FoodMap()
@@ -34,7 +37,9 @@ void FoodMap::DropFood(float x, float y)
             AllFood.at(i)->pos[0] = x;
             AllFood.at(i)->pos[1] = y;
             AllFood.at(i)->eaten = false;
+            piecesHidden--;
             break;
+            
         }
     }
     
@@ -42,29 +47,39 @@ void FoodMap::DropFood(float x, float y)
 
 void FoodMap::GenerateFood(float frameTime)
 {
+    //printf("Number of pieces hidden: (%i / %i)\n", piecesHidden, numberOfPieces);
     sinceLastFoodTime += frameTime;
 
     if (sinceLastFoodTime >= GENERATE_FOOD_TIME) // 3.0f
     {
-        for (int i = 0; i < numberOfPieces; i++)
+        for (int j = 0; j < (int)(piecesHidden * FOODREGENRATE); ++j)
         {
-            if (AllFood.at(i)->eaten)
+            for (int i = 0; i < numberOfPieces; i++)
             {
-                food* tempFood = new food;
-                tempFood->tex = new Texture;
-                tempFood->tex->loadFromFile(FOOD_FILE_PATHS[i % 2], renderer);
-                tempFood->fileName = FOOD_FILE_PATHS[i % 2];
-                tempFood->pos[0] = Random(0, LEVEL_SIZE.w);
-                tempFood->pos[1] = Random(0, LEVEL_SIZE.h);
-                tempFood->eaten = false;
-                tempFood->radius = 10.0f;
+                if (AllFood.at(i)->eaten)
+                {
+                   
+                    food* tempFood = new food;
+                    tempFood->tex = new Texture;
+                    tempFood->tex->loadFromFile(FOOD_FILE_PATHS[1], renderer);
+                    tempFood->fileName = FOOD_FILE_PATHS[1];
+                    tempFood->pos[0] = Random(0 + BORDER, LEVEL_SIZE.w - BORDER);
+                    tempFood->pos[1] = Random(0 + BORDER, LEVEL_SIZE.h - BORDER);
+                    tempFood->eaten = false;
+                    tempFood->radius = 10.0f;
+                    tempFood->gridReference[0] = tempFood->pos[0] / GRIDSIZE;
+                    tempFood->gridReference[1] = tempFood->pos[1] / GRIDSIZE;
 
-                AllFood.push_back(tempFood);
-                numberOfPieces++;
-                break;
+                    AllFood.push_back(tempFood);
+                    numberOfPieces++;
+                    piecesHidden--;
+                    break;
+                }
             }
+            sinceLastFoodTime = 0.0f;
+            
         }
-        sinceLastFoodTime = 0.0f;
+       
     }
 
 }
@@ -72,6 +87,7 @@ void FoodMap::GenerateFood(float frameTime)
 void FoodMap::HideFood(int index)
 {
     AllFood.at(index)->eaten = true;
+    piecesHidden++;
 }
 
 void FoodMap::Render(Texture* texture, SDL_Rect& camera)
@@ -90,6 +106,7 @@ void FoodMap::Render(Texture* texture, SDL_Rect& camera)
 
 float FoodMap::Random(int rangeMin, int rangeMax)
 {
+    
     float result = (float)rand() / (float)(RAND_MAX + 1);
     result *= (float)(rangeMax - rangeMin);
     result += rangeMin;

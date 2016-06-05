@@ -1,6 +1,7 @@
 
 #include "Game.h"
 
+
 Game::Game()
 {
     if (!init(SCREEN_SIZE))
@@ -29,18 +30,23 @@ Game::Game()
 
 bool Game::CreateGameObjects()
 {
+    capTimer = new Timer();
+    fpsTimer = new Timer();
+    fpsTimer->start();
+
     ui = new UI(renderer, viewportMain);
     snake = new Snake(renderer, LEVEL_SIZE.w /3, LEVEL_SIZE.h / 3);
     food = new FoodMap(renderer);
     client = new SlitherClient();
 
-    snake->setInPlay(true);
-
-    Snake* tempSnake = new Snake(renderer, LEVEL_SIZE.w / 3 + 10.0f , LEVEL_SIZE.h / 3);
-
-    tempSnake->setInPlay(true);
+    for (int i = 0; i < NUMOFAI; ++i)
+    {
+        Snake* tempSnake = new Snake(renderer, food->Random(0, LEVEL_SIZE.w), food->Random(0, LEVEL_SIZE.h));
+        tempSnake->AI = true;
+        snakes.push_back(tempSnake);
+    }
     
-    snakes.push_back(tempSnake);
+    
 
     return true;
 }
@@ -95,7 +101,7 @@ bool Game::init(const SDL_Rect& screenSize)
         return false;
     }
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED );
     if (renderer == nullptr)
     {
         SDL_DestroyWindow(window);
@@ -112,45 +118,77 @@ bool Game::init(const SDL_Rect& screenSize)
 
 void Game::run(SDL_Event& e, float& frameTime, GameStates& state)
 {
+    capTimer->start();
+
+    //Calculate and correct fps
+    float avgFPS = countedFrames / (fpsTimer->getTicks() / 1000.f);
+    if (avgFPS > 2000000)
+    {
+        avgFPS = 0;
+    }
+
     // set the screen colour
     SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
     //Clear screen
     SDL_RenderClear(renderer);
 
-   
+    //------------------
+    // PROCESS INPUT
+    //------------------
+
+    if (networkConnected)
+    {
+        if (client->Poll(lastPacket))
+        {
+            ProcessPackets();
+        }
+    }
+    else
+    {
+        client->AttemptConnection(networkConnected);
+    }
+
+    ProcessInputs(e, frameTime, SCREEN_SIZE, touchLocation, state);
+    
+
+    //------------------
+    // UPDATE GAME
+    //------------------
+    snake->CenterCamera(cameraMain);
+    snake->Move(frameTime, cameraMain);
+    AIControl();
+    for (int i = 0; i < snakes.size(); i++)
+    {
+        snakes.at(i)->Move(frameTime, cameraMain);
+    }
+
+    
+
+    ui->UpdateUI(score, networkConnected, avgFPS);
+     
+    food->GenerateFood(frameTime);
+    
+
+    //------------------
+    // COLLISION DETECTION
+    //------------------
 
     //Collision detection
     Collision();
 
     if (snake->BoostCheck(frameTime, score))
     {
-        if (score > 0)
+        if (score >= 0)
         {
             food->DropFood(snake->Pieces.at(snake->NumberOfPieces - 1)->Position[0], snake->Pieces.at(snake->NumberOfPieces - 1)->Position[1]);
         }
     }
 
-    //Inputs
-    client->Poll();
-    ProcessInputs(e, frameTime, SCREEN_SIZE, touchLocation, state);
-    ProcessPackets();
+    //------------------
+    // Rendering
+    //------------------
 
-    //Movement
-    snake->CenterCamera(cameraMain);
-    snake->Move(frameTime, cameraMain);
-    for (int i = 0; i < snakes.size(); i++)
-    {
-        snakes.at(i)->Move(frameTime, cameraMain);
-    }
-
-    client->SendPosition(snake->getPosX(), snake->getPosY(), cameraMain); // Send packets
-
-    ui->UpdateUI(score);
-     
-    food->GenerateFood(frameTime);
-
-    //Rendering
     background->renderMedia(0, 0, renderer, &cameraMain);
     food->Render(background, cameraMain);
     for (int i = 0; i < snakes.size(); i++)
@@ -160,9 +198,23 @@ void Game::run(SDL_Event& e, float& frameTime, GameStates& state)
     snake->Render(viewportMain, cameraMain);
     ui->Render(touchLocation, cameraFull);
     
-   
+
+    client->SendPositionPacket(snake->getPosX(), snake->getPosY(), cameraMain); // Send packets
+
+
     //Update screen
     SDL_RenderPresent(renderer);
+
+
+    // Cap Framerate
+    ++countedFrames;
+
+    int frameTicks = capTimer->getTicks();
+    if (frameTicks < SCREEN_TICKS_PER_FRAME)
+    {
+        //Wait remaining time
+        SDL_Delay(SCREEN_TICKS_PER_FRAME - frameTicks);
+    }
 
 }
 
@@ -226,25 +278,20 @@ void Game::Collision()
     {
         if (food->AllFood.at(i)->eaten == false)
         {
-            float foodXPos = food->AllFood.at(i)->pos[0];
-            float foodYPos = food->AllFood.at(i)->pos[1];
-
-            float snakeXPos = snake->getPosX();
-            float snakeYPos = snake->getPosY();
-
-            float xDist = foodXPos - snakeXPos;
-            float yDist = foodYPos - snakeYPos;
-
-            float distance = sqrt(xDist * xDist + yDist * yDist);
-
-            if (distance <= snake->getRadius() + food->AllFood.at(i)->radius)
+            if (food->AllFood.at(i)->gridReference[0] <= snake->headGridReference[0] + 1 && food->AllFood.at(i)->gridReference[1] <= snake->headGridReference[1] + 1 ||
+                food->AllFood.at(i)->gridReference[0] >= snake->headGridReference[0] - 1 && food->AllFood.at(i)->gridReference[1] >= snake->headGridReference[1] - 1)
             {
-                //Collision
-                food->HideFood(i);
-                score++;
-                snake->AddNewPiece();
-                break;
+                if (SphereToSphere(snake->getPosX(), snake->getPosY(), 10.0f, food->AllFood.at(i)->pos[0], food->AllFood.at(i)->pos[1], 10.0f))
+                {
+                    //Collision
+                    food->HideFood(i);
+                    score++;
+                    snake->AddNewPiece();
+                    break;
+                }
             }
+
+           
 
             
         }
@@ -253,21 +300,169 @@ void Game::Collision()
 
 void Game::ProcessPackets()
 {
-    float oldx = snakes.at(0)->getPosX();;
-    float oldy = snakes.at(0)->getPosY();;
-    
-    int x = client->X;
-    int y = client->Y;
 
-    if(x > 0 && y > 0)
+    if (std::find(knownIDs.begin(), knownIDs.end(), client->ID) != knownIDs.end())
     {
-        snakes.at(0)->setPosX(x);
-        snakes.at(0)->setPosY(y);
-        //snakes.at(0)->MoveTo(x, y, cameraMain);
+        //printf("ID known %i\n", client->ID);
     }
+    else
+    {
+        printf("ID NOT KNOWN \n");
+        lastPacket = PacketTypes::NEWCONNECTION;
+    }
+
+    switch (lastPacket)
+    {
+        case PacketTypes::NEWCONNECTION:
+        {
+            if (NumberOfConnectedSnakes < 2)
+            {
+                snakes.at(NumberOfConnectedSnakes)->ID = client->ID;
+                snakes.at(NumberOfConnectedSnakes)->AI = false;
+            }
+            else
+            {
+                Snake* tempSnake = new Snake(renderer, LEVEL_SIZE.w / 3 + (10.0f * NumberOfConnectedSnakes), LEVEL_SIZE.h / 3);
+                tempSnake->AI = false;
+                snakes.push_back(tempSnake);
+            }
+
+            knownIDs.push_back(client->ID);
+            NumberOfConnectedSnakes++;
+            break;
+        }
+
+        case PacketTypes::SNAKEPOS:
+        {   int x = client->X;
+            int y = client->Y;
+
+            if (x >= 0 && y >= 0)
+            {
+
+               /* std::vector<Snake*>::iterator it;
+                it = std::find(snakes.begin(), snakes.end(), client->ID);
+*/
+                for (int i = 0; i < NumberOfConnectedSnakes; ++i)
+                {
+                    if (snakes.at(i)->getID() == client->ID)
+                    {
+                        //printf("ID FOUND");
+                        snakes.at(i)->setPosX(client->X);
+                        snakes.at(i)->setPosY(client->Y);
+                    }
+                    if (i == NumberOfConnectedSnakes - 1)
+                    {
+                        // Not found
+                        //printf("ID NOT FOUND");
+                    
+                    }
+                }
+
+                //if (it != snakes.end())
+                //{
+                //    //Found
+                //    printf("ID FOUND");
+                //    (*it)->setPosX(client->X);
+                //    (*it)->setPosY(client->Y);
+                //}
+                //else
+                //{
+                //    // Not found
+                //    printf("ID NOT FOUND");
+                //}
+
+                
+            }
+            break;
+        }
+
+        case PacketTypes::SNAKEADD:
+        {
+
+            break;
+        }
+
+        
+    }
+        
+    
+    
 
 
 }
+
+void Game::AIControl()
+{
+    for (int i = 0; i < snakes.size(); ++i)
+    {
+        if (snakes.at(i)->AI)
+        {
+            if (snakes.at(i)->atDestination)
+            {
+                float minX = (snakes.at(i)->getPosX() - AIDISTANCE < 0+BORDER) ? 0 + BORDER : snakes.at(i)->getPosX() - AIDISTANCE;
+                float maxX = (snakes.at(i)->getPosX() + AIDISTANCE > LEVEL_SIZE.w - BORDER) ? LEVEL_SIZE.w - BORDER : snakes.at(i)->getPosX() + AIDISTANCE;
+
+                float minY = (snakes.at(i)->getPosY() - AIDISTANCE < 0 + BORDER) ? 0 + BORDER : snakes.at(i)->getPosY() - AIDISTANCE;
+                float maxY = (snakes.at(i)->getPosY() + AIDISTANCE > LEVEL_SIZE.h - BORDER) ? LEVEL_SIZE.h - BORDER : snakes.at(i)->getPosY() + AIDISTANCE;
+
+                float x = food->Random(minX, maxX);
+                float y = food->Random(minY, maxY);
+             
+                snakes.at(i)->Destination[0] = x;
+                snakes.at(i)->Destination[1] = y;
+                snakes.at(i)->atDestination = false;
+            }
+            else
+            {
+                for (int j = 0; j < food->GetNumOfPieces(); ++j)
+                {
+                    if (food->AllFood.at(j)->eaten == false)
+                    {
+                        if (food->AllFood.at(i)->gridReference[0] <= snakes.at(i)->headGridReference[0] + 1 && food->AllFood.at(i)->gridReference[1] <= snakes.at(i)->headGridReference[1] + 1 ||
+                            food->AllFood.at(i)->gridReference[0] >= snakes.at(i)->headGridReference[0] - 1 && food->AllFood.at(i)->gridReference[1] >= snakes.at(i)->headGridReference[1] - 1)
+                        {
+                            if (SphereToSphere(snakes.at(i)->getPosX(), snakes.at(i)->getPosY(), 10, food->AllFood.at(j)->pos[0], food->AllFood.at(j)->pos[1], 10))
+                            {
+                                //Collision
+                                food->HideFood(j);
+                                snakes.at(i)->AddNewPiece();
+                                break;
+                            }
+                        }
+                    }
+                    
+                }
+
+                if (SphereToSphere(snakes.at(i)->getPosX(), snakes.at(i)->getPosY(), 10, snakes.at(i)->Destination[0], snakes.at(i)->Destination[1], 0))
+                {
+                    snakes.at(i)->atDestination = true;
+                }
+                else
+                {
+                    snakes.at(i)->MoveTo(snakes.at(i)->Destination[0], snakes.at(i)->Destination[1], cameraFull); // Majority of the loop here
+                }
+            }
+
+        }
+    }
+}
+
+float Game::Distance(float x1, float y1, float x2, float y2)
+{
+    float xDist = x2 - x1;
+    float yDist = y2 - y1;
+
+    return sqrt(xDist * xDist + yDist * yDist);
+
+}
+
+bool Game::SphereToSphere(float x1, float y1, float r1, float x2, float y2, float r2)
+{
+    float distance = Distance(x1, y1, x2, y2);
+
+    return (distance <= (10.0f + 10.0f));
+}
+
 
 void Game::close()
 {
