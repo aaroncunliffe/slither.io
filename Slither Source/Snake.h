@@ -11,6 +11,7 @@ struct SnakePiece
     Texture* tex;
     float Position[2];
     float directionVector[2];
+    float gridReference[2];
 };
 
 class Snake
@@ -51,10 +52,16 @@ public:
     int NumberOfPieces = 0;
     std::vector<SnakePiece*> Pieces;
 
+    int ID;
     bool boosting = false;
+    bool AI;
+
+    float Destination[2];
+    float headGridReference[2];
+    bool atDestination = true;
 
     //Initializes the variables
-    Snake(SDL_Renderer* rend);
+    Snake(SDL_Renderer* rend, float x, float y);
 
     ~Snake();
 
@@ -67,12 +74,29 @@ public:
     //Shows the dot on the screen relative to the camera
     void Render(SDL_Rect* viewport, SDL_Rect &camera);
 
-    //Position accessors
+    //Getters
     int getPosX() { return posX; };
     int getPosY() { return posY; };
     int getRadius() { return radius; }
 
+    //Setters
+    void setPosX(float x) { posX = x; }
+    void setPosY(float y) { posY = y; }
+    void setDirectionVector(int x, int y) { directionVector[0] = x; directionVector[1] = y; }
+
     //Movement
     void MoveTo(float x, float y, SDL_Rect& camera);
     void Move(float timeStep, SDL_Rect & camera);
+
+
+    int getID() const{ return ID; }
+
+    // For find
+    /*bool operator== (const unsigned int &ID2) const
+    {
+        if (this->getID() == ID2)
+            return true;
+        else
+            return false;
+    }*/
 };

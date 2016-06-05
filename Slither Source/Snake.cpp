@@ -2,19 +2,18 @@
 #include <iostream>>
 
 
+// MOVEMENT CODE NEEDS TIDYING UP
 
-Snake::Snake(SDL_Renderer* rend) :
+
+Snake::Snake(SDL_Renderer* rend, float x, float y) :
     renderer(rend)
 {
     // load up the textures
     if (!LoadMedia())
         throw;
 
-    posX = LEVEL_SIZE.w / 3;
-    posY = LEVEL_SIZE.h / 3;
-    //Initialize the offsets
-    //posX = 0;
-    //posY = 0;
+    posX = x;
+    posY = y;
 
     //Initialize the velocity
     velX = 0;
@@ -28,6 +27,8 @@ Snake::Snake(SDL_Renderer* rend) :
     AddNewPiece();
     AddNewPiece();
     AddNewPiece();
+
+    atDestination = true;
 
 }
 
@@ -62,55 +63,77 @@ void Snake::Move(float frameTime, SDL_Rect & camera)
     //If the dot went too far to the left or right
     if ((posX < 0) || (posX + HEAD_WIDTH > LEVEL_SIZE.w))
     {
-        //Move back
-        posX -= velX;
+        if (boosting)
+        {
+            posX -= velX * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;  //Move the dot left or right
+        }
+        else
+        {
+            posX -= velX * SPEED_MULTIPLIER * frameTime;  //Move the dot left or right
+        }
     }
 
     //If the dot went too far up or down
     if ((posY < 0) || (posY + HEAD_HEIGHT > LEVEL_SIZE.h))
     {
-        //Move back
-        posY -= velY;
+        if (boosting)
+        {
+            posY -= velY * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;  //Move the dot up or down
+        }
+        else
+        {
+            posY -= velY * SPEED_MULTIPLIER * frameTime;  //Move the dot up or down
+        }
     }
     
     // Update the direction of each segment
     for (int i = 0; i < NumberOfPieces; i++)
     {
         //Calculate movement to previous segments position
-        float Vector2[2];
-        if (i == 0)
+        float Vector[2];
+        if (i == 0) // if first piece, follow head
         {
-            Vector2[0] = (posX - camera.x) - (Pieces.at(i)->Position[0] - camera.x);
-            Vector2[1] = (posY - camera.y) - (Pieces.at(i)->Position[1] - camera.y);
+            Vector[0] = (posX - camera.x) - (Pieces.at(i)->Position[0] - camera.x);
+            Vector[1] = (posY - camera.y) - (Pieces.at(i)->Position[1] - camera.y);
         }
         else if (i > 0)
         {
-            Vector2[0] = (Pieces.at(i - 1)->Position[0] - camera.x) - (Pieces.at(i)->Position[0] - camera.x);
-            Vector2[1] = (Pieces.at(i - 1)->Position[1] - camera.y) - (Pieces.at(i)->Position[1] - camera.y);
+            Vector[0] = (Pieces.at(i - 1)->Position[0] - camera.x) - (Pieces.at(i)->Position[0] - camera.x);
+            Vector[1] = (Pieces.at(i - 1)->Position[1] - camera.y) - (Pieces.at(i)->Position[1] - camera.y);
 
         }
 
-        float vectorLength = sqrt(Vector2[0] * Vector2[0] + Vector2[1] * Vector2[1]);
+        float vectorLength = sqrt(Vector[0] * Vector[0] + Vector[1] * Vector[1]);
 
-        Pieces.at(i)->directionVector[0] = Vector2[0] / vectorLength;
-        Pieces.at(i)->directionVector[1] = Vector2[1] / vectorLength;
+        Pieces.at(i)->directionVector[0] = Vector[0] / vectorLength;
+        Pieces.at(i)->directionVector[1] = Vector[1] / vectorLength;
 
         // Moves each piece keeping a fixed distance between them
         if (vectorLength > (HEAD_HEIGHT / 2))
         {
-            if (boosting)
+            if (i == 0) // if first piece, follow head
             {
-                Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;
-                Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;
+                Pieces.at(i)->Position[0] = posX - ((HEAD_HEIGHT / 2) * Pieces.at(i)->directionVector[0]);
+                Pieces.at(i)->Position[1] = posY - ((HEAD_HEIGHT / 2) * Pieces.at(i)->directionVector[1]);
             }
-            else
+            else if (i > 0)
             {
-                Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * SPEED_MULTIPLIER * frameTime;
-                Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * SPEED_MULTIPLIER * frameTime;
+                Pieces.at(i)->Position[0] = Pieces.at(i - 1)->Position[0] - ((HEAD_HEIGHT / 2) * Pieces.at(i)->directionVector[0]);
+                Pieces.at(i)->Position[1] = Pieces.at(i - 1)->Position[1] - ((HEAD_HEIGHT / 2) * Pieces.at(i)->directionVector[1]);
+
             }
+
+            // Update grid location
+            Pieces.at(i)->gridReference[0] = Pieces.at(i)->Position[0] / GRIDSIZE;
+            Pieces.at(i)->gridReference[1] = Pieces.at(i)->Position[1] / GRIDSIZE;
+          
             
         }
     }
+
+    // Update Grid location;
+    headGridReference[0] = posX / GRIDSIZE;
+    headGridReference[1] = posY / GRIDSIZE;
 }
 
 bool Snake::BoostCheck(float frameTime, int &score)
@@ -118,11 +141,11 @@ bool Snake::BoostCheck(float frameTime, int &score)
     if (boosting && score > 0)
     {
         boostTimer += frameTime;
-
-        if (boostTimer >= SNAKE_BOOST_TIMER)
+        if (boostTimer > SNAKE_BOOST_TIMER)
         {
-            RemovePiece();
+
             boostTimer = 0.0f;
+            RemovePiece();
             score--;
             return true;
         }
@@ -130,7 +153,8 @@ bool Snake::BoostCheck(float frameTime, int &score)
     }
     else
     {
-        boostTimer = 0;
+        boostTimer = 0.0f;
+        boosting = false;
     }
     return false;
 }
@@ -195,8 +219,6 @@ void Snake::AddNewPiece()
         tempPiece->Position[1] = Pieces.at(NumberOfPieces -1)->Position[1] + (-Pieces.at(NumberOfPieces - 1)->directionVector[1] * HEAD_WIDTH / 2);
     }
     
-
-
     Pieces.push_back(tempPiece);
     NumberOfPieces++;
 }
@@ -218,3 +240,15 @@ void Snake::Render(SDL_Rect* viewport, SDL_Rect &camera)
     head->renderMedia(posX - camera.x, posY - camera.y, renderer);
 }
 
+
+// Old code for fixed distance between segments
+/*if (boosting)
+{
+Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;
+Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * (SPEED_MULTIPLIER * BOOST_MULTIPLIER) * frameTime;
+}
+else
+{
+Pieces.at(i)->Position[0] += Pieces.at(i)->directionVector[0] * SPEED_MULTIPLIER * frameTime;
+Pieces.at(i)->Position[1] += Pieces.at(i)->directionVector[1] * SPEED_MULTIPLIER * frameTime;
+}*/

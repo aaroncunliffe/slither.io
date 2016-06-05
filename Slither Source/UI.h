@@ -19,9 +19,9 @@ private:
     SDL_Rect* viewportFull;
     SDL_Rect* viewportMain;
 
-    SDL_Point mapLocation;
-
     Texture* scoreTexture;    
+    Texture* networkTexture;
+    Texture* fpsTexture;
 
 public:
     UI(SDL_Renderer* rend, SDL_Rect* viewportMain);
@@ -29,7 +29,7 @@ public:
     ~UI();
 
     bool LoadMedia();
-    void UpdateUI(int score);
+    void UpdateUI(int score, bool networkConnected, float avgFps);
 
     void Render(SDL_Point& touchLocation, SDL_Rect &camera);
 

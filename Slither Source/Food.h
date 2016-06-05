@@ -2,6 +2,7 @@
 
 #include "Globals.h"
 #include "Texture.h"
+#include "Time.h"
 
 struct food
 {
@@ -10,6 +11,7 @@ struct food
     int pos[2];
     bool eaten;
     float radius;
+    float gridReference[2];
 };
 
 class FoodMap
@@ -17,6 +19,7 @@ class FoodMap
 
 private:
     int numberOfPieces = MAX_FOOD_PIECES;
+    int piecesHidden = 0;
 
     SDL_Renderer* renderer;
 
