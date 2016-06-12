@@ -127,7 +127,6 @@ void Snake::Move(float frameTime, SDL_Rect & camera)
             Pieces.at(i)->gridReference[0] = Pieces.at(i)->Position[0] / GRIDSIZE;
             Pieces.at(i)->gridReference[1] = Pieces.at(i)->Position[1] / GRIDSIZE;
           
-            
         }
     }
 
@@ -207,6 +206,7 @@ void Snake::AddNewPiece()
     tempPiece->tex->loadFromFile(SNAKE_HEAD_PATH, renderer);
     tempPiece->directionVector[0] = directionVector[0];
     tempPiece->directionVector[1] = directionVector[1];
+    tempPiece->radius = 10.0f;
     
     if (NumberOfPieces == 0)
     {
@@ -229,15 +229,23 @@ void Snake::RemovePiece()
     NumberOfPieces--;
 }
 
+void Snake::Die()
+{
+    dead = true;
+}
+
 void Snake::Render(SDL_Rect* viewport, SDL_Rect &camera)
 {
-
-    for (int i = NumberOfPieces - 1; i >= 0; --i)
+    if (!dead)
     {
-        Pieces.at(i)->tex->renderMedia(Pieces.at(i)->Position[0] - camera.x, Pieces.at(i)->Position[1] - camera.y, renderer);
-    }
+        for (int i = NumberOfPieces - 1; i >= 0; --i)
+        {
+            Pieces.at(i)->tex->renderMedia(Pieces.at(i)->Position[0] - camera.x, Pieces.at(i)->Position[1] - camera.y, renderer);
+        }
 
-    head->renderMedia(posX - camera.x, posY - camera.y, renderer);
+        head->renderMedia(posX - camera.x, posY - camera.y, renderer);
+    }
+   
 }
 
 

@@ -30,18 +30,52 @@ FoodMap::~FoodMap()
 
 void FoodMap::DropFood(float x, float y)
 {
-    for (int i = 0; i < numberOfPieces; i++)
+    /*
+    
+    If piecesHidden > 0:
+        Move hidden piece
+
+    else 
+        Generate new piece
+        
+    
+    
+    */
+
+    if (piecesHidden > 0)
     {
-        if (AllFood.at(i)->eaten)
+        for (int i = 0; i < numberOfPieces; i++)
         {
-            AllFood.at(i)->pos[0] = x;
-            AllFood.at(i)->pos[1] = y;
-            AllFood.at(i)->eaten = false;
-            piecesHidden--;
-            break;
-            
+            if (AllFood.at(i)->eaten)
+            {
+                AllFood.at(i)->pos[0] = x;
+                AllFood.at(i)->pos[1] = y;
+                AllFood.at(i)->eaten = false;
+                AllFood.at(i)->gridReference[0] = AllFood.at(i)->pos[0] / GRIDSIZE;
+                AllFood.at(i)->gridReference[1] = AllFood.at(i)->pos[1] / GRIDSIZE;
+                piecesHidden--;
+                break;
+
+            }
         }
     }
+    else
+    {
+        food* tempFood = new food;
+        tempFood->tex = new Texture;
+        tempFood->tex->loadFromFile(FOOD_FILE_PATHS[1], renderer);
+        tempFood->fileName = FOOD_FILE_PATHS[1];
+        tempFood->pos[0] = x;
+        tempFood->pos[1] = y;
+        tempFood->eaten = false;
+        tempFood->radius = 10.0f;
+        tempFood->gridReference[0] = tempFood->pos[0] / GRIDSIZE;
+        tempFood->gridReference[1] = tempFood->pos[1] / GRIDSIZE;
+
+        AllFood.push_back(tempFood);
+        numberOfPieces++;
+    }
+    
     
 }
 
@@ -72,7 +106,6 @@ void FoodMap::GenerateFood(float frameTime)
 
                     AllFood.push_back(tempFood);
                     numberOfPieces++;
-                    piecesHidden--;
                     break;
                 }
             }
@@ -92,7 +125,6 @@ void FoodMap::HideFood(int index)
 
 void FoodMap::Render(Texture* texture, SDL_Rect& camera)
 {
-
     for (int i = 0; i < numberOfPieces; i++)
     {
         if (!AllFood.at(i)->eaten)
@@ -106,7 +138,6 @@ void FoodMap::Render(Texture* texture, SDL_Rect& camera)
 
 float FoodMap::Random(int rangeMin, int rangeMax)
 {
-    
     float result = (float)rand() / (float)(RAND_MAX + 1);
     result *= (float)(rangeMax - rangeMin);
     result += rangeMin;

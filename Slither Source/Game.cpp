@@ -101,7 +101,7 @@ bool Game::init(const SDL_Rect& screenSize)
         return false;
     }
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED );
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (renderer == nullptr)
     {
         SDL_DestroyWindow(window);
@@ -136,54 +136,59 @@ void Game::run(SDL_Event& e, float& frameTime, GameStates& state)
     //------------------
     // PROCESS INPUT
     //------------------
-
-    if (networkConnected)
+    if (gameState == GameStates::PLAYING)
     {
-        if (client->Poll(lastPacket))
+        if (networkConnected)
         {
-            ProcessPackets();
+            if (client->Poll(lastPacket))
+            {
+                ProcessPackets();
+            }
         }
-    }
-    else
-    {
-        client->AttemptConnection(networkConnected);
-    }
-
-    ProcessInputs(e, frameTime, SCREEN_SIZE, touchLocation, state);
-    
-
-    //------------------
-    // UPDATE GAME
-    //------------------
-    snake->CenterCamera(cameraMain);
-    snake->Move(frameTime, cameraMain);
-    AIControl();
-    for (int i = 0; i < snakes.size(); i++)
-    {
-        snakes.at(i)->Move(frameTime, cameraMain);
-    }
-
-    
-
-    ui->UpdateUI(score, networkConnected, avgFPS);
-     
-    food->GenerateFood(frameTime);
-    
-
-    //------------------
-    // COLLISION DETECTION
-    //------------------
-
-    //Collision detection
-    Collision();
-
-    if (snake->BoostCheck(frameTime, score))
-    {
-        if (score >= 0)
+        else
         {
-            food->DropFood(snake->Pieces.at(snake->NumberOfPieces - 1)->Position[0], snake->Pieces.at(snake->NumberOfPieces - 1)->Position[1]);
+            client->AttemptConnection(networkConnected);
         }
-    }
+
+        ProcessInputs(e, frameTime, SCREEN_SIZE, touchLocation, state);
+
+
+        //------------------
+        // UPDATE GAME
+        //------------------
+        snake->CenterCamera(cameraMain);
+        snake->Move(frameTime, cameraMain);
+        AIControl();
+        for (int i = 0; i < snakes.size(); i++)
+        {
+            snakes.at(i)->Move(frameTime, cameraMain);
+        }
+
+
+
+        ui->UpdateUI(score, networkConnected, avgFPS);
+
+        food->GenerateFood(frameTime);
+
+
+        //------------------
+        // COLLISION DETECTION
+        //------------------
+
+        //Collision detection
+        Collision();
+        AICollision();
+
+        if (snake->BoostCheck(frameTime, score))
+        {
+            if (score >= 0)
+            {
+                food->DropFood(snake->Pieces.at(snake->NumberOfPieces - 1)->Position[0], snake->Pieces.at(snake->NumberOfPieces - 1)->Position[1]);
+            }
+        }
+
+    } // end of if playing
+    
 
     //------------------
     // Rendering
@@ -209,12 +214,12 @@ void Game::run(SDL_Event& e, float& frameTime, GameStates& state)
     // Cap Framerate
     ++countedFrames;
 
-    int frameTicks = capTimer->getTicks();
-    if (frameTicks < SCREEN_TICKS_PER_FRAME)
-    {
-        //Wait remaining time
-        SDL_Delay(SCREEN_TICKS_PER_FRAME - frameTicks);
-    }
+    //int frameTicks = capTimer->getTicks();
+    //if (frameTicks < SCREEN_TICKS_PER_FRAME)
+    //{
+    //    //Wait remaining time
+    //    SDL_Delay(SCREEN_TICKS_PER_FRAME - frameTicks);
+    //}
 
 }
 
@@ -274,7 +279,11 @@ void Game::ProcessInputs(SDL_Event& event, float& frameTime, const SDL_Rect& scr
 
 void Game::Collision()
 {
-    for (int i = 0; i < food->GetNumOfPieces(); i++)
+    if (snake->dead)
+        return;
+
+    // Collision with food
+    for (int i = 0; i < food->AllFood.size(); ++i)
     {
         if (food->AllFood.at(i)->eaten == false)
         {
@@ -291,11 +300,176 @@ void Game::Collision()
                 }
             }
 
-           
+        }
+    } // End of for loop for pieces
 
-            
+    //Collision with player snake head to each AI/networked snake pieces
+    for (int i = 0; i < snakes.size(); ++i)
+    {   
+        if (snakes.at(i)->dead)
+            break;
+
+        for (int j = 0; j < snakes.at(i)->Pieces.size(); ++j)
+        {
+            float snakeHeadX = snake->getPosX();
+            float snakeHeadY = snake->getPosY();
+
+            if (snakes.at(i)->Pieces.at(j)->gridReference[0] <= snake->headGridReference[0] + 1 && snakes.at(i)->Pieces.at(j)->gridReference[1] <= snake->headGridReference[1] + 1 ||
+                snakes.at(i)->Pieces.at(j)->gridReference[0] >= snake->headGridReference[0] - 1 && snakes.at(i)->Pieces.at(j)->gridReference[1] >= snake->headGridReference[1] - 1)
+            {
+                if (SphereToSphere(snakeHeadX, snakeHeadY, snake->getRadius(), snakes.at(i)->Pieces.at(j)->Position[0], snakes.at(i)->Pieces.at(j)->Position[1], snakes.at(i)->Pieces.at(j)->radius))
+                {
+                    //Head of player snake collided with any of the pieces from the other snakes
+                    snake->Die();
+                    
+                    food->DropFood(snakeHeadX, snakeHeadY);
+
+                    for (int k = 0; k < snake->Pieces.size(); k++)
+                    {
+                        food->DropFood(snake->Pieces.at(k)->Position[0], snake->Pieces.at(k)->Position[1]);
+                    }
+
+                    gameState = GameStates::OVER;
+                    //break;
+
+                }
+            }
         }
     }
+
+}
+
+void Game::AIControl()
+{
+    
+    for (int i = 0; i < snakes.size(); i++)
+    {
+        if (!snakes.at(i)->dead)
+        {
+
+            if (snakes.at(i)->AI)
+            {
+                // If at destination, calculate new destination
+                if (snakes.at(i)->atDestination)
+                {
+                    float minX = (snakes.at(i)->getPosX() - AIDISTANCE < 0 + BORDER) ? 0 + BORDER : snakes.at(i)->getPosX() - AIDISTANCE;
+                    float maxX = (snakes.at(i)->getPosX() + AIDISTANCE > LEVEL_SIZE.w - BORDER) ? LEVEL_SIZE.w - BORDER : snakes.at(i)->getPosX() + AIDISTANCE;
+
+                    float minY = (snakes.at(i)->getPosY() - AIDISTANCE < 0 + BORDER) ? 0 + BORDER : snakes.at(i)->getPosY() - AIDISTANCE;
+                    float maxY = (snakes.at(i)->getPosY() + AIDISTANCE > LEVEL_SIZE.h - BORDER) ? LEVEL_SIZE.h - BORDER : snakes.at(i)->getPosY() + AIDISTANCE;
+
+                    float x = food->Random(minX, maxX);
+                    float y = food->Random(minY, maxY);
+
+                    snakes.at(i)->Destination[0] = x;
+                    snakes.at(i)->Destination[1] = y;
+                    snakes.at(i)->atDestination = false;
+                }
+                else
+                {
+                    for (int j = 0; j < food->AllFood.size(); ++j)
+                    {
+                        if (food->AllFood.at(j)->eaten == false)
+                        {
+                            if (food->AllFood.at(i)->gridReference[0] <= snakes.at(i)->headGridReference[0] + 1 && food->AllFood.at(i)->gridReference[1] <= snakes.at(i)->headGridReference[1] + 1 ||
+                                food->AllFood.at(i)->gridReference[0] >= snakes.at(i)->headGridReference[0] - 1 && food->AllFood.at(i)->gridReference[1] >= snakes.at(i)->headGridReference[1] - 1)
+                            {
+                                if (SphereToSphere(snakes.at(i)->getPosX(), snakes.at(i)->getPosY(), 10, food->AllFood.at(j)->pos[0], food->AllFood.at(j)->pos[1], 10))
+                                {
+                                    //Collision
+                                    food->HideFood(j);
+                                    snakes.at(i)->AddNewPiece();
+                                    break;
+                                }
+                            }
+                        }
+
+                    }
+
+                    if (SphereToSphere(snakes.at(i)->getPosX(), snakes.at(i)->getPosY(), snakes.at(i)->getRadius(), snakes.at(i)->Destination[0], snakes.at(i)->Destination[1], 10))
+                    {
+                        snakes.at(i)->atDestination = true;
+                    }
+                    else
+                    {
+                        snakes.at(i)->MoveTo(snakes.at(i)->Destination[0], snakes.at(i)->Destination[1], cameraFull); // Majority of the loop here
+                    }
+                }
+            }
+
+
+        } // end of if AI
+
+    } // end of for loop for all AI
+}
+
+void Game::AICollision()
+{
+    //Check AI snake collision with other AI snakes
+    for (int i = 0; i < snakes.size(); i++)
+    {
+        if (!snakes.at(i)->dead)
+        {
+
+            for (int j = 0; j < snakes.size(); j++)
+            {
+                if (!snakes.at(j)->dead)
+                {
+                    if (i != j)
+                    {
+                        for (int k = 0; k < snakes.at(j)->Pieces.size(); k++)
+                        {
+                            if (snakes.at(j)->Pieces.at(k)->gridReference[0] <= snakes.at(i)->headGridReference[0] + 1 && snakes.at(j)->Pieces.at(k)->gridReference[1] <= snakes.at(i)->headGridReference[1] + 1 ||
+                                snakes.at(j)->Pieces.at(k)->gridReference[0] >= snakes.at(i)->headGridReference[0] - 1 && snakes.at(j)->Pieces.at(k)->gridReference[1] >= snakes.at(i)->headGridReference[1] - 1)
+                            {
+                                if (SphereToSphere(snakes.at(i)->getPosX(), snakes.at(i)->getPosY(), snakes.at(i)->getRadius(), snakes.at(j)->Pieces.at(k)->Position[0], snakes.at(j)->Pieces.at(k)->Position[1], snakes.at(j)->Pieces.at(k)->radius))
+                                {
+                                    snakes.at(i)->Die();
+
+                                    food->DropFood(snakes.at(i)->getPosX(), snakes.at(i)->getPosY());
+
+                                    for (int l = 0; l < snakes.at(i)->Pieces.size(); l++)
+                                    {
+                                        food->DropFood(snakes.at(i)->Pieces.at(l)->Position[0], snakes.at(i)->Pieces.at(l)->Position[1]);
+                                    }
+                                    //break;
+
+                                }
+
+                            }
+                        } // End of pieces
+
+                    }
+                }
+                
+            }
+
+            //Check for AaI snake collision with player snake
+            for (int j = 0; j < snake->Pieces.size(); ++j)
+            {
+                if (snake->Pieces.at(j)->gridReference[0] <= snakes.at(i)->headGridReference[0] + 1 && snake->Pieces.at(j)->gridReference[1] <= snakes.at(i)->headGridReference[1] + 1 ||
+                    snake->Pieces.at(j)->gridReference[0] >= snakes.at(i)->headGridReference[0] - 1 && snake->Pieces.at(j)->gridReference[1] >= snakes.at(i)->headGridReference[1] - 1)
+                {
+                    if (SphereToSphere(snakes.at(i)->getPosX(), snakes.at(i)->getPosY(), snakes.at(i)->getRadius(), snake->Pieces.at(j)->Position[0], snake->Pieces.at(j)->Position[1], snake->Pieces.at(j)->radius))
+                    {
+                        snakes.at(i)->Die();
+
+                        food->DropFood(snakes.at(i)->getPosX(), snakes.at(i)->getPosY());
+
+                        for (int l = 0; l < snakes.at(i)->Pieces.size(); l++)
+                        {
+                            food->DropFood(snakes.at(i)->Pieces.at(l)->Position[0], snakes.at(i)->Pieces.at(l)->Position[1]);
+                        }
+
+
+                        //break;
+                    }
+                }
+
+            }
+        } // end of !=dead
+
+    } // end for i
 }
 
 void Game::ProcessPackets()
@@ -391,61 +565,7 @@ void Game::ProcessPackets()
 
 }
 
-void Game::AIControl()
-{
-    for (int i = 0; i < snakes.size(); ++i)
-    {
-        if (snakes.at(i)->AI)
-        {
-            if (snakes.at(i)->atDestination)
-            {
-                float minX = (snakes.at(i)->getPosX() - AIDISTANCE < 0+BORDER) ? 0 + BORDER : snakes.at(i)->getPosX() - AIDISTANCE;
-                float maxX = (snakes.at(i)->getPosX() + AIDISTANCE > LEVEL_SIZE.w - BORDER) ? LEVEL_SIZE.w - BORDER : snakes.at(i)->getPosX() + AIDISTANCE;
 
-                float minY = (snakes.at(i)->getPosY() - AIDISTANCE < 0 + BORDER) ? 0 + BORDER : snakes.at(i)->getPosY() - AIDISTANCE;
-                float maxY = (snakes.at(i)->getPosY() + AIDISTANCE > LEVEL_SIZE.h - BORDER) ? LEVEL_SIZE.h - BORDER : snakes.at(i)->getPosY() + AIDISTANCE;
-
-                float x = food->Random(minX, maxX);
-                float y = food->Random(minY, maxY);
-             
-                snakes.at(i)->Destination[0] = x;
-                snakes.at(i)->Destination[1] = y;
-                snakes.at(i)->atDestination = false;
-            }
-            else
-            {
-                for (int j = 0; j < food->GetNumOfPieces(); ++j)
-                {
-                    if (food->AllFood.at(j)->eaten == false)
-                    {
-                        if (food->AllFood.at(i)->gridReference[0] <= snakes.at(i)->headGridReference[0] + 1 && food->AllFood.at(i)->gridReference[1] <= snakes.at(i)->headGridReference[1] + 1 ||
-                            food->AllFood.at(i)->gridReference[0] >= snakes.at(i)->headGridReference[0] - 1 && food->AllFood.at(i)->gridReference[1] >= snakes.at(i)->headGridReference[1] - 1)
-                        {
-                            if (SphereToSphere(snakes.at(i)->getPosX(), snakes.at(i)->getPosY(), 10, food->AllFood.at(j)->pos[0], food->AllFood.at(j)->pos[1], 10))
-                            {
-                                //Collision
-                                food->HideFood(j);
-                                snakes.at(i)->AddNewPiece();
-                                break;
-                            }
-                        }
-                    }
-                    
-                }
-
-                if (SphereToSphere(snakes.at(i)->getPosX(), snakes.at(i)->getPosY(), 10, snakes.at(i)->Destination[0], snakes.at(i)->Destination[1], 0))
-                {
-                    snakes.at(i)->atDestination = true;
-                }
-                else
-                {
-                    snakes.at(i)->MoveTo(snakes.at(i)->Destination[0], snakes.at(i)->Destination[1], cameraFull); // Majority of the loop here
-                }
-            }
-
-        }
-    }
-}
 
 float Game::Distance(float x1, float y1, float x2, float y2)
 {

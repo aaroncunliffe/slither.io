@@ -52,7 +52,7 @@ private:
     std::vector<Snake*> snakes;
     int NumberOfConnectedSnakes = 0;
 
-    GameStates gameState = GameStates::WAITING;
+    GameStates gameState = GameStates::PLAYING;
     
     bool networkConnected = false;
     PacketTypes lastPacket = PacketTypes::DISCONNECTED;
@@ -74,6 +74,7 @@ public:
     void ProcessPackets();
 
     void AIControl();
+    void AICollision();
 
     void Collision();
 

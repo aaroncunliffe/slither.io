@@ -26,7 +26,7 @@ int main(int argc, char* args[])
     // while application is running
     while (state != GameStates::QUIT)
     {
-        frameTime = 0.1f; //static_cast<float>(frameTimer.getTicks()) / 1000.0f;
+        frameTime = static_cast<float>(frameTimer.getTicks()) / 1000.0f;
         // restart frame timer
         frameTimer.start();
 

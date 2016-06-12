@@ -12,6 +12,7 @@ struct SnakePiece
     float Position[2];
     float directionVector[2];
     float gridReference[2];
+    float radius;
 };
 
 class Snake
@@ -41,6 +42,7 @@ private:
 
     float boostTimer = 0.0f;
     
+   
 
     // Score / length / sections 
     
@@ -55,6 +57,7 @@ public:
     int ID;
     bool boosting = false;
     bool AI;
+    bool dead = false;
 
     float Destination[2];
     float headGridReference[2];
@@ -68,6 +71,8 @@ public:
     void AddNewPiece();
     void RemovePiece();
     bool BoostCheck(float frameTime, int &score);
+
+    void Die();
 
     void CenterCamera(SDL_Rect& camera);
 

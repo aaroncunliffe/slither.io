@@ -40,7 +40,7 @@ public:
 
     void HideFood(int index);
     void GenerateFood(float frameTime);
-
+    
     float Random(int rangeMin, int rangeMax);
 
 
