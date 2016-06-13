@@ -164,7 +164,7 @@ void Snake::CenterCamera(SDL_Rect& camera)
     camera.y = (static_cast<int>(posY + (HEAD_HEIGHT / 2.0f))) - SCREEN_SIZE.h / 2;
 
     //Keep the camera in bounds
-    if (camera.x < 0)
+    /*if (camera.x < 0)
     {
         camera.x = 0;
     }
@@ -179,7 +179,7 @@ void Snake::CenterCamera(SDL_Rect& camera)
     if (camera.y > LEVEL_SIZE.h - camera.h)
     {
         camera.y = LEVEL_SIZE.h - camera.h;
-    }
+    }*/
 }
 
 void Snake::MoveTo(float x, float y, SDL_Rect& camera)

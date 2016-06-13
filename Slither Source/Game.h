@@ -32,6 +32,7 @@ private:
     SDL_Surface* screenSurface = NULL;
     
     Texture* background;
+    Texture* border;
 
     //Event handler
     SDL_Event e;

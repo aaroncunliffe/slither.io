@@ -11,6 +11,7 @@
 // Filename consts
 const std::string TTF_FILE = { "media\\font.ttf" };
 const std::string BACKGROUND_PATH = "media\\Background.png";
+const std::string BORDER_PATH = "media\\Border.png";
 const std::string SNAKE_HEAD_PATH = "media\\dot.png";
 const std::string FOOD_FILE_PATHS[] = { "media\\reddot.png" ,"media\\bluedot.png" };
 

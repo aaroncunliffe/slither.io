@@ -25,7 +25,10 @@ Game::Game()
     cameraMain = UI_MAIN;
 
     background = new Texture;
+    border = new Texture;
+
     background->loadFromFile(BACKGROUND_PATH, renderer);
+    border->loadFromFile(BORDER_PATH, renderer);
 }
 
 bool Game::CreateGameObjects()
@@ -54,6 +57,7 @@ bool Game::CreateGameObjects()
 Game::~Game()
 {
     background->free();
+    border->free();
 
     delete ui;
     delete snake;
@@ -174,10 +178,9 @@ void Game::run(SDL_Event& e, float& frameTime, GameStates& state)
         //------------------
         // COLLISION DETECTION
         //------------------
-
-        //Collision detection
         Collision();
         AICollision();
+        
 
         if (snake->BoostCheck(frameTime, score))
         {
@@ -194,7 +197,9 @@ void Game::run(SDL_Event& e, float& frameTime, GameStates& state)
     // Rendering
     //------------------
 
-    background->renderMedia(0, 0, renderer, &cameraMain);
+    background->renderMedia(0 - cameraMain.x, 0 - cameraMain.y, renderer);
+    border->renderMedia(-1000 - cameraMain.x, -1000 - cameraMain.y, renderer);
+
     food->Render(background, cameraMain);
     for (int i = 0; i < snakes.size(); i++)
     {
@@ -306,35 +311,36 @@ void Game::Collision()
     //Collision with player snake head to each AI/networked snake pieces
     for (int i = 0; i < snakes.size(); ++i)
     {   
-        if (snakes.at(i)->dead)
-            break;
-
-        for (int j = 0; j < snakes.at(i)->Pieces.size(); ++j)
+        if (!snakes.at(i)->dead)
         {
-            float snakeHeadX = snake->getPosX();
-            float snakeHeadY = snake->getPosY();
-
-            if (snakes.at(i)->Pieces.at(j)->gridReference[0] <= snake->headGridReference[0] + 1 && snakes.at(i)->Pieces.at(j)->gridReference[1] <= snake->headGridReference[1] + 1 ||
-                snakes.at(i)->Pieces.at(j)->gridReference[0] >= snake->headGridReference[0] - 1 && snakes.at(i)->Pieces.at(j)->gridReference[1] >= snake->headGridReference[1] - 1)
+            for (int j = 0; j < snakes.at(i)->Pieces.size(); ++j)
             {
-                if (SphereToSphere(snakeHeadX, snakeHeadY, snake->getRadius(), snakes.at(i)->Pieces.at(j)->Position[0], snakes.at(i)->Pieces.at(j)->Position[1], snakes.at(i)->Pieces.at(j)->radius))
+                float snakeHeadX = snake->getPosX();
+                float snakeHeadY = snake->getPosY();
+
+                if (snakes.at(i)->Pieces.at(j)->gridReference[0] <= snake->headGridReference[0] + 1 && snakes.at(i)->Pieces.at(j)->gridReference[1] <= snake->headGridReference[1] + 1 ||
+                    snakes.at(i)->Pieces.at(j)->gridReference[0] >= snake->headGridReference[0] - 1 && snakes.at(i)->Pieces.at(j)->gridReference[1] >= snake->headGridReference[1] - 1)
                 {
-                    //Head of player snake collided with any of the pieces from the other snakes
-                    snake->Die();
-                    
-                    food->DropFood(snakeHeadX, snakeHeadY);
-
-                    for (int k = 0; k < snake->Pieces.size(); k++)
+                    if (SphereToSphere(snakeHeadX, snakeHeadY, snake->getRadius(), snakes.at(i)->Pieces.at(j)->Position[0], snakes.at(i)->Pieces.at(j)->Position[1], snakes.at(i)->Pieces.at(j)->radius))
                     {
-                        food->DropFood(snake->Pieces.at(k)->Position[0], snake->Pieces.at(k)->Position[1]);
+                        //Head of player snake collided with any of the pieces from the other snakes
+                        snake->Die();
+
+                        food->DropFood(snakeHeadX, snakeHeadY);
+
+                        for (int k = 0; k < snake->Pieces.size(); k++)
+                        {
+                            food->DropFood(snake->Pieces.at(k)->Position[0], snake->Pieces.at(k)->Position[1]);
+                        }
+
+                        gameState = GameStates::OVER;
+                        //break;
+
                     }
-
-                    gameState = GameStates::OVER;
-                    //break;
-
                 }
             }
         }
+
     }
 
 }
