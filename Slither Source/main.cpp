@@ -33,7 +33,6 @@ int main(int argc, char* args[])
         // do game stuff
         game->run(e, frameTime, state);
 
-        
     }
 
   

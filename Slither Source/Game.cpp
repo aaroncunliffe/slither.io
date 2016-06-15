@@ -347,7 +347,6 @@ void Game::Collision()
 
 void Game::AIControl()
 {
-    
     for (int i = 0; i < snakes.size(); i++)
     {
         if (!snakes.at(i)->dead)
@@ -571,8 +570,6 @@ void Game::ProcessPackets()
 
 }
 
-
-
 float Game::Distance(float x1, float y1, float x2, float y2)
 {
     float xDist = x2 - x1;
@@ -586,7 +583,7 @@ bool Game::SphereToSphere(float x1, float y1, float r1, float x2, float y2, floa
 {
     float distance = Distance(x1, y1, x2, y2);
 
-    return (distance <= (10.0f + 10.0f));
+    return (distance <= (r1 + r2));
 }
 
 
