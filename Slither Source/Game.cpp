@@ -586,7 +586,7 @@ bool Game::SphereToSphere(float x1, float y1, float r1, float x2, float y2, floa
 {
     float distance = Distance(x1, y1, x2, y2);
 
-    return (distance <= (10.0f + 10.0f));
+    return (distance <= (r1 + r2));
 }
 
 
