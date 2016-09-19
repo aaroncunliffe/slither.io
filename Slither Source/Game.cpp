@@ -197,6 +197,8 @@ void Game::run(SDL_Event& e, float& frameTime, GameStates& state)
     // Rendering
     //------------------
 
+
+
     background->renderMedia(0 - cameraMain.x, 0 - cameraMain.y, renderer);
     border->renderMedia(-1000 - cameraMain.x, -1000 - cameraMain.y, renderer);
 
@@ -571,8 +573,6 @@ void Game::ProcessPackets()
 
 }
 
-
-
 float Game::Distance(float x1, float y1, float x2, float y2)
 {
     float xDist = x2 - x1;
@@ -585,7 +585,7 @@ float Game::Distance(float x1, float y1, float x2, float y2)
 bool Game::SphereToSphere(float x1, float y1, float r1, float x2, float y2, float r2)
 {
     float distance = Distance(x1, y1, x2, y2);
-
+    
     return (distance <= (r1 + r2));
 }
 

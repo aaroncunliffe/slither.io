@@ -35,6 +35,7 @@ private:
     //The X and Y offsets of the dot
     float posX, posY;
     float directionVector[2];
+    float speed = 0;
 
     //The velocity of the dot
     float velX = 0.0f;
@@ -42,10 +43,9 @@ private:
 
     float boostTimer = 0.0f;
     
-   
-
-    // Score / length / sections 
-    
+    float lastScreenCoords[2] = { 0.0f, 0.0f };
+    float lastScreenLength = 0.0f;
+    float angle = 0.0f;     
 
     bool LoadMedia();
 
@@ -58,6 +58,7 @@ public:
     bool boosting = false;
     bool AI;
     bool dead = false;
+
 
     float Destination[2];
     float headGridReference[2];

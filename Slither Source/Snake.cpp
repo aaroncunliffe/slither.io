@@ -184,15 +184,43 @@ void Snake::CenterCamera(SDL_Rect& camera)
 
 void Snake::MoveTo(float x, float y, SDL_Rect& camera)
 {
-    float Vector[2];
+    float vector[2];
 
-    Vector[0] = x - (posX - camera.x);
-    Vector[1] = y - (posY - camera.y);
+    vector[0] = x - (posX - camera.x);
+    vector[1] = y - (posY - camera.y);
 
-    float vectorLength = sqrt(Vector[0] * Vector[0] + Vector[1] * Vector[1]);
+    float vectorLength = sqrt(vector[0] * vector[0] + vector[1] * vector[1]);
 
-    directionVector[0] = Vector[0] / vectorLength;
-    directionVector[1] = Vector[1] / vectorLength;
+    //CALCULATE ANGLE HERE
+    float newScreenLength = sqrt(x * x + y * y);
+    float newScreenCoords[2] = { x / newScreenLength, y / newScreenLength };
+
+
+    float dotProduct = (newScreenCoords[0] * lastScreenCoords[0] + newScreenCoords[1] * lastScreenCoords[1]);
+    angle = atan(abs(dotProduct));
+
+    if (x > 0 && y < 0) {
+        angle = M_PI - angle;
+    }
+    else if (x < 0 && y < 0) {
+        angle = M_PI + angle;
+    }
+    else if (x < 0 && y > 0) {
+        angle = M_PI * 2 - angle;
+    }
+
+    //std::cout <<  angle * (180.0f / M_PI) << std::endl;
+
+    ///////////////
+    lastScreenCoords[0] = x;
+    lastScreenCoords[1] = y;
+    lastScreenLength = sqrt(lastScreenCoords[0] * lastScreenCoords[0] + lastScreenCoords[1] * lastScreenCoords[1]);
+    lastScreenCoords[0] = x / lastScreenLength;
+    lastScreenCoords[1] = y / lastScreenLength;
+
+    directionVector[0] = vector[0] / vectorLength;
+    directionVector[1] = vector[1] / vectorLength;
+    speed = vectorLength;
 
     velX = directionVector[0];
     velY = directionVector[1];

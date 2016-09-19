@@ -196,8 +196,6 @@ void SlitherClient::SplitAndStore(PacketTypes &lastPacket)
 
             break;
         }
-            
-           
 
         } // end switch
 
@@ -205,38 +203,3 @@ void SlitherClient::SplitAndStore(PacketTypes &lastPacket)
         count++;
     }
 }
-
-//for (int i = 0; receivedPacket[i] != 0; i++)
-//{
-
-//    if (receivedPacket[i] == ':')
-//    {
-//        count++;
-//        
-//    }
-//    else
-//    {
-//        switch (count)
-//        {
-//        case 0:
-//            IDchar += receivedPacket[i];
-
-//            break;
-//        case 1:
-//            Xchar += receivedPacket[i];
-//            break;
-//        case 2:
-//            Ychar += receivedPacket[i];
-//            break;
-//        }
-//    }
-
-//}
-
-/* printf("Say > ");
-gets_s(message, 1024);
-
-if (strlen(message) > 0) {
-ENetPacket *packet = enet_packet_create(message, strlen(message) + 1, ENET_PACKET_FLAG_RELIABLE);
-enet_peer_send(peer, 0, packet);
-}*/

@@ -39,6 +39,7 @@ enum PacketTypes
 //Game Consts
 const int SCREEN_FPS = 60;
 const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
+
 const int NUMOFAI = 20;
 const int AIDISTANCE = 600;
 const int GRIDSIZE = 200;
