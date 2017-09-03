@@ -1,5 +1,5 @@
 # Slither.io
-A spin off of the popular game slither made using c++ with SDL2.
+A spin off of the popular game slither made using C++ with SDL2.
 
 Game constants can be found in the "Globals.h" file.
 * Number of AI
@@ -12,4 +12,4 @@ Game constants can be found in the "Globals.h" file.
 An attempt at networking capabilities has been made using ENET however this doesn't work currently.
 Server source does not currently work
 
-This repo only contains the source code. A project needs to be set up with the dependancies. SDL2 with image, true type font and ENET.
+This repo only contains the source code. A project needs to be set up with the dependancies. SDL2 with image and true type font.
